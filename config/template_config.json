@@ -64,12 +64,8 @@
       "id": "conclusion",
       "title": "Conclusion",
       "use_if": "always",
-      "template": "<<risk_warning>>\n\nIf you are happy to proceed with our recommendations, please let us know and we will implement them for you.",
-      "placeholders": {
-        "risk_warning": {
-          "prompt": "Add the standard risk warning about investments."
-        }
-      }
+      "template": "The value of investments can fall as well as rise and you may get back less than you invest. Past performance is not a guide to future returns.\n\nIf you are happy to proceed with our recommendations, please let us know and we will implement them for you.",
+      "placeholders": {}
     }
   ]
 }
