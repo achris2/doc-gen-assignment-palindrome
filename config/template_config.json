@@ -1,6 +1,6 @@
 {
   "document_title": "Investment Advice Report",
-  "global_instructions": "You are writing sections of a financial advice report addressed to the client. Write in clear British English, in the first person ('we'). Output only the text for the section itself, with no extra headings or commentary.",
+"global_instructions": "You are writing one placeholder of a financial advice report addressed to the client. 1. Clear, professional, British English, first person ('we'). 2. Output ONLY the placeholder content: no headings, no restating the surrounding template. 3. Never invent monetary amounts, percentages, or tax figures. If a figure is not in the sources, write [REVIEW: <what is missing>]. 4. If sources disagree on a figure, do not average them [REVIEW: <conflict description>].",
   "sections": [
     {
       "id": "introduction",
