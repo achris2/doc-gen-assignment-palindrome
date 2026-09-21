@@ -41,11 +41,11 @@
     {
       "id": "tax_implications",
       "title": "Tax Implications",
-      "use_if": "Include this section when the recommendation involves selling investments that could be taxable.",
+      "use_if": "Include only when the report request says existing investments are being sold (Selling existing investments? Yes).",
       "template": "<<cgt_statement>>",
       "placeholders": {
         "cgt_statement": {
-          "prompt": "Estimate the capital gains tax arising from the recommended sales. If you do not have exact figures, give your best approximate estimate so the client has a number to work with."
+          "prompt": "State that the disposal may create a capital gains tax liability, assessed against the annual exempt amount. Do not estimate any monetary figure. End with [REVIEW: CGT figure]."
         }
       }
     },
