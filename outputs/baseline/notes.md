@@ -1,8 +1,15 @@
+# Baseline - Pipeline Run
 
 
-| Folder Name | ~ Size | Baseline Runtime (real) |
-| :--- | :---: | :---: |
-| `data/client_01_clean` | _e.g., 12 KB_ | _e.g., 0m4.210s_ |
-| `data/client_02_medium` | _e.g., 45 KB_ | _e.g., 0m8.450s_ |
-| `data/client_03_hard` | _e.g., 120 KB_ | _e.g., 0m18.120s_ |
-| `data/client_04_stretch` | _e.g., 1.5 MB_ | _e.g., 0m45.300s_ |
+| Folder Name              | Size   | Baseline Runtime (real) |
+| ------------------------ | ------ | ----------------------- |
+| `data/client_01_clean`   | 136 KB | 0m19.007s               |
+| `data/client_02_medium`  | 172 KB | 0m25.005s               |
+| `data/client_03_hard`    | 212 KB | 0m31.822s               |
+| `data/client_04_stretch` | 212 KB | 0m40.869s               |
+
+
+- All baseline runs with gpt-4o-mini
+- Size from running `du -sh *` on folder
+- Real runtime from `time`
+
