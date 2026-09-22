@@ -56,7 +56,7 @@
       "template": "<<fees>>",
       "placeholders": {
         "fees": {
-          "prompt": "Set out the ongoing fees and charges that apply to the client's investments."
+          "prompt": "List the platform charge and ongoing advice charge as a short Markdown table with columns Charge | Rate. Always put [REVIEW: platform fee] and [REVIEW: advice fee] in the Rate column for those rows. Never calculate, or invent percentages. Add an Initial charge row only if an initial charge is explicitly sourced, and never list it as ongoing."
         }
       }
     },
