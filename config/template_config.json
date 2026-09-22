@@ -9,7 +9,7 @@
       "template": "Further to our recent discussions, we are writing to set out our advice in relation to <<scope>>. This advice is based on the information currently available to us.\n\nThis firm is authorised and regulated by the Financial Conduct Authority.",
       "placeholders": {
         "scope": {
-          "prompt": "Say which of the client's accounts this report relates to."
+          "prompt": "Markdown bulleted list of which accounts this report covers, as a short noun phrase only. No full sentences."
         }
       }
     },
@@ -20,10 +20,10 @@
       "template": "<<summary>>\n\nThe accounts covered by this report are as follows:\n\n<<holdings_table>>",
       "placeholders": {
         "summary": {
-          "prompt": "Summarise the client's objectives and circumstances."
+          "prompt": "1. Extract client's circumstances and objectives. 2. Provide a brief Markdown bulleted list of circumstances and objectives. 3. Do not include transaction amounts, sales, top-ups, or tax figures."
         },
         "holdings_table": {
-          "prompt": "List the client's accounts and their values as a markdown table."
+          "prompt": "1. Extract client's accounts and their values. 2. List the client's accounts and their values as a markdown table."
         }
       }
     },
