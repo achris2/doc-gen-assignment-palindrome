@@ -23,7 +23,7 @@
           "prompt": "1. Extract client's circumstances and objectives. 2. Provide a brief Markdown bulleted list of circumstances and objectives. 3. Do not include transaction amounts, sales, top-ups, or tax figures."
         },
         "holdings_table": {
-          "prompt": "1. Extract client's accounts and their values. 2. List the client's accounts and their values as a markdown table."
+          "prompt": "Markdown table with columns Account | Owner | Type | Value for accounts in scope. One row per account, do not invent values. If a value is missing, use [REVIEW: <what is missing>]."
         }
       }
     },
