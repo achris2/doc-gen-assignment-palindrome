@@ -34,7 +34,7 @@
       "template": "We recommend the following:\n\n<<recommendation>>",
       "placeholders": {
         "recommendation": {
-          "prompt": "Describe what the client should do with their investments, and why."
+          "prompt": "1. Extract the proposed recommendations alongisde the rationale. 2. State what we recommend and why, using only amounts and actions evidenced in the sources. Do not invent fees or tax figures. If an amount is unclear or sources conflict, use [REVIEW: …].3. Generate a markdown bulleted list of the recommendations and rationale."
         }
       }
     },
