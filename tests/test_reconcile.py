@@ -128,3 +128,32 @@ def test_text_conflict_on_request_field_keeps_request_draft() -> None:
     assert len(facts["conflicts"]) == 1
     assert facts["facts"]["risk_profile"]["value"] == "4 (moderate)"
     assert facts["facts"]["risk_profile"]["conflict"] is True
+
+
+def test_phantom_meeting_account_id_does_not_create_row() -> None:
+    observations = [
+        _obs("account_value", 40000, "db", as_of="2026-03-15", account_id="H-GIA-J"),
+        _obs("account_type", "GIA", "db", account_id="H-GIA-J"),
+        _obs(
+            "account_value",
+            45000,
+            "meeting",
+            as_of="2026-05-14",
+            account_id="joint_GIA",
+        ),
+        _obs(
+            "account_value",
+            20000,
+            "meeting",
+            as_of="2026-05-12",
+            account_id=None,
+        ),
+    ]
+    # Attach quotes like extract would
+    observations[-1]["quote"] = "about twenty thousand in the cash account"
+    observations[-2]["quote"] = "GIA looked nearer forty-five"
+    facts = reconcile_observations(observations)
+    ids = {a["account_id"] for a in facts["accounts"]}
+    assert "joint_GIA" not in ids
+    assert "H-GIA-J" in ids
+    assert any("unmatched figure" in item for item in facts["review_items"])

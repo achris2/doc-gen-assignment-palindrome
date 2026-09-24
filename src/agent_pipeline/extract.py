@@ -27,27 +27,37 @@ _REQUEST_FIELD_MAP: dict[str, str] = {
 _MEETING_EXTRACT_PROMPT = """\
 Extract evidence observations from this adviser meeting note for an investment advice report.
 Return ONLY valid JSON (no markdown fences):
-{
+{{
   "meeting_date": "YYYY-MM-DD or null",
   "observations": [
-    {
+    {{
       "field": "circumstances|objectives|recommendation_summary|account_value|other descriptive snake_case",
       "value": "string or number as stated",
-      "account_id": "optional account id if this is an account figure, else null",
-      "as_of": "YYYY-MM-DD if known for this observation, else null"
-    }
+      "account_id": "MUST be one of the known account ids listed below, or null",
+      "as_of": "YYYY-MM-DD if known for this observation, else null",
+      "approximate": true,
+      "quote": "exact sentence from the note supporting this observation"
+    }}
   ]
-}
+}}
+
+Known accounts (use ONLY these ids for account_id, otherwise null):
+{known_accounts}
 
 Rules:
 - Capture circumstances, objectives, and the agreed recommendation_summary.
-- Capture any live/discussed account values as field "account_value" with account_id when known
-  (infer id from context if clearly the joint GIA / named account; else null and put the
-  account name in the value string).
+- Capture live/discussed account values as field "account_value".
+- account_id MUST be exactly one of the known ids above, or null. Never invent ids
+  (no joint_GIA, no free-text account names as ids).
+- If the note describes an account without a clear id match, set account_id to null and
+  put the description in value; include quote.
+- value for account_value should be a number when a figure is stated (strip currency words).
+- approximate is true when the note uses hedging language (around, about, a little over, etc.).
 - Prefer the meeting_date for as_of on meeting figures when a specific date is not given.
 - Do not invent fees, tax figures, or amounts not in the note.
 - Omit empty observations.
 """
+
 
 _STRUCTURED_FALLBACK_PROMPT = """\
 The source below could not be parsed with the expected schema.
@@ -59,14 +69,16 @@ Return ONLY valid JSON:
       "field": "snake_case field name",
       "value": "string or number",
       "account_id": null,
-      "as_of": null
+      "as_of": null,
+      "approximate": false,
+      "quote": null
     }
   ]
 }
 Use fields when present: accounts_covered, investment_amount, source_of_funds, selling,
 product, ownership, risk_profile, initial_charge, account_value, circumstances, objectives,
 recommendation_summary.
-selling must be true/false/yes/no if present. Do not invent values.
+selling must be true/false/yes/no if present. Do not invent values. Never invent account ids.
 """
 
 
@@ -78,6 +90,8 @@ def observation(
     source_file: str,
     as_of: str | None = None,
     account_id: str | None = None,
+    quote: str | None = None,
+    approximate: bool | None = None,
 ) -> dict[str, Any]:
     """Build one evidence observation."""
     obs: dict[str, Any] = {
@@ -90,6 +104,10 @@ def observation(
         obs["as_of"] = as_of
     if account_id is not None:
         obs["account_id"] = account_id
+    if quote is not None:
+        obs["quote"] = quote
+    if approximate is not None:
+        obs["approximate"] = approximate
     return obs
 
 
@@ -286,13 +304,18 @@ def _llm_json(
     model: str,
     prompt: str,
     body: str,
+    *,
+    temperature: float | None = None,
 ) -> dict[str, Any] | None:
     try:
-        response = openai_client.chat.completions.create(
-            model=model,
-            response_format={"type": "json_object"},
-            messages=[{"role": "user", "content": f"{prompt}\n\n---\n\n{body}"}],
-        )
+        kwargs: dict[str, Any] = {
+            "model": model,
+            "response_format": {"type": "json_object"},
+            "messages": [{"role": "user", "content": f"{prompt}\n\n---\n\n{body}"}],
+        }
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        response = openai_client.chat.completions.create(**kwargs)
         raw = response.choices[0].message.content or "{}"
         return _parse_json_object(raw)
     except Exception:
@@ -305,7 +328,9 @@ def _observations_from_llm_payload(
     source_role: SourceRole,
     source_file: str,
     default_as_of: str | None = None,
+    known_account_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
+    allowed = known_account_ids
     out: list[dict[str, Any]] = []
     for item in payload.get("observations") or []:
         if not isinstance(item, dict):
@@ -321,6 +346,12 @@ def _observations_from_llm_payload(
             value = coerced
         as_of = item.get("as_of") or default_as_of
         account_id = item.get("account_id")
+        if account_id is not None:
+            account_id = str(account_id)
+            if allowed is not None and account_id not in allowed:
+                account_id = None
+        quote = item.get("quote")
+        approximate = item.get("approximate")
         out.append(
             observation(
                 field=str(field),
@@ -328,10 +359,24 @@ def _observations_from_llm_payload(
                 source_role=source_role,
                 source_file=source_file,
                 as_of=str(as_of) if as_of else None,
-                account_id=str(account_id) if account_id else None,
+                account_id=account_id,
+                quote=str(quote) if quote else None,
+                approximate=bool(approximate) if approximate is not None else None,
             )
         )
     return out
+
+
+def _format_known_accounts(accounts: list[dict[str, Any]]) -> str:
+    if not accounts:
+        return "(none — leave account_id null)"
+    lines = []
+    for acc in accounts:
+        lines.append(
+            f"- {acc.get('account_id')}: type={acc.get('type')!r}, "
+            f"platform={acc.get('platform')!r}, owner={acc.get('owner')!r}"
+        )
+    return "\n".join(lines)
 
 
 def extract_meeting_observations(
@@ -340,9 +385,15 @@ def extract_meeting_observations(
     *,
     openai_client: OpenAI,
     model: str,
+    known_accounts: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """One structured LLM extraction over meeting notes."""
-    payload = _llm_json(openai_client, model, _MEETING_EXTRACT_PROMPT, text)
+    accounts = known_accounts or []
+    known_ids = {str(a["account_id"]) for a in accounts if a.get("account_id")}
+    prompt = _MEETING_EXTRACT_PROMPT.format(
+        known_accounts=_format_known_accounts(accounts)
+    )
+    payload = _llm_json(openai_client, model, prompt, text, temperature=0)
     if not payload:
         return []
     meeting_date = payload.get("meeting_date")
@@ -352,6 +403,7 @@ def extract_meeting_observations(
         source_role="meeting",
         source_file=source_file,
         default_as_of=default_as_of,
+        known_account_ids=known_ids or None,
     )
 
 
@@ -371,6 +423,27 @@ def _llm_structured_fallback(
     return _observations_from_llm_payload(
         payload, source_role=source_role, source_file=source_file
     )
+
+
+def _known_accounts_from_db_obs(observations: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Build known-account list from db observations already extracted."""
+    by_id: dict[str, dict[str, Any]] = {}
+    for obs in observations:
+        if obs.get("source_role") != "db":
+            continue
+        aid = obs.get("account_id")
+        if not aid:
+            continue
+        aid = str(aid)
+        acc = by_id.setdefault(aid, {"account_id": aid})
+        field = obs.get("field") or ""
+        if field == "account_type":
+            acc["type"] = obs.get("value")
+        elif field == "account_platform":
+            acc["platform"] = obs.get("value")
+        elif field == "account_owner":
+            acc["owner"] = obs.get("value")
+    return list(by_id.values())
 
 
 def extract_observations(
@@ -417,12 +490,14 @@ def extract_observations(
 
     if "meeting" in typed_sources and openai_client is not None and model:
         src = typed_sources["meeting"]
+        known = _known_accounts_from_db_obs(observations)
         observations.extend(
             extract_meeting_observations(
                 src["text"],
                 src.get("name", "meeting"),
                 openai_client=openai_client,
                 model=model,
+                known_accounts=known,
             )
         )
 

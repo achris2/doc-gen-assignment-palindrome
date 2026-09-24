@@ -130,7 +130,44 @@ def _pick_by_freshness(group: list[dict[str, Any]]) -> tuple[dict[str, Any] | No
 
 
 def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]:
-    """Collapse observations into draft facts; never drop conflicting evidence."""
+    """Collapse observations into draft facts; never drop conflicting evidence.
+
+    Only ``db`` observations create account shells. Non-db account figures that
+    do not match an existing db id become unmatched REVIEW items (no phantoms).
+    """
+    # Seed accounts from db only
+    accounts: dict[str, dict[str, Any]] = {}
+    for obs in observations:
+        if obs.get("source_role") != "db":
+            continue
+        aid = obs.get("account_id")
+        if not aid:
+            continue
+        aid = str(aid)
+        accounts.setdefault(aid, {"account_id": aid})
+
+    db_ids = set(accounts.keys())
+    review_items: list[str] = []
+
+    # Drop / flag non-db account_value rows that invent ids or lack an id
+    filtered: list[dict[str, Any]] = []
+    for obs in observations:
+        if obs.get("field") != "account_value":
+            filtered.append(obs)
+            continue
+        role = obs.get("source_role")
+        aid = obs.get("account_id")
+        if role == "db":
+            filtered.append(obs)
+            continue
+        if aid and str(aid) in db_ids:
+            filtered.append(obs)
+            continue
+        # Unmatched non-db figure → REVIEW, do not create account
+        quote = obs.get("quote") or obs.get("value")
+        review_items.append(f"[REVIEW: unmatched figure: {quote}]")
+    observations = filtered
+
     groups: dict[tuple[str, str | None], list[dict[str, Any]]] = {}
     for obs in observations:
         if not obs.get("field"):
@@ -138,30 +175,34 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
         groups.setdefault(_group_key(obs), []).append(obs)
 
     conflicts: list[dict[str, Any]] = []
-    review_items: list[str] = []
     facts: dict[str, Any] = {}
-    accounts: dict[str, dict[str, Any]] = {}
 
-    for (field, account_id), group in sorted(groups.items(), key=lambda x: (x[0][0], x[0][1] or "")):
+    def _ensure_account(account_id: str) -> dict[str, Any] | None:
+        """Only touch accounts that already exist from db."""
+        if account_id not in accounts:
+            return None
+        return accounts[account_id]
+
+    for (field, account_id), group in sorted(
+        groups.items(), key=lambda x: (x[0][0], x[0][1] or "")
+    ):
         # Null account values → review, no invention
         if field == "account_value" and any(o.get("value") is None for o in group):
             label = account_id or "unknown account"
             review_items.append(f"[REVIEW: {label} value]")
-            # Still record account shell
             if account_id:
-                accounts.setdefault(account_id, {"account_id": account_id})
-                null_obs = next(o for o in group if o.get("value") is None)
-                accounts[account_id]["value"] = None
-                accounts[account_id]["value_source"] = null_obs.get("source_role")
-                accounts[account_id]["value_source_file"] = null_obs.get("source_file")
-                accounts[account_id]["as_of"] = null_obs.get("as_of")
-                accounts[account_id]["needs_review"] = True
-            # Continue to also compare non-null peers if any
+                acc = _ensure_account(account_id)
+                if acc is not None:
+                    null_obs = next(o for o in group if o.get("value") is None)
+                    acc["value"] = None
+                    acc["value_source"] = null_obs.get("source_role")
+                    acc["value_source_file"] = null_obs.get("source_file")
+                    acc["as_of"] = null_obs.get("as_of")
+                    acc["needs_review"] = True
             group = [o for o in group if o.get("value") is not None]
             if not group:
                 continue
 
-        # Detect conflicts across distinct values
         unique_vals: list[Any] = []
         for o in group:
             v = o.get("value")
@@ -170,20 +211,26 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
 
         has_conflict = len(unique_vals) > 1
         if has_conflict:
-            details = "; ".join(
-                f"{o.get('source_role')}@{o.get('as_of') or 'undated'}={o.get('value')!r}"
-                for o in group
-            )
+            detail_parts = []
+            for o in group:
+                bit = (
+                    f"{o.get('source_role')}@{o.get('as_of') or 'undated'}="
+                    f"{o.get('value')!r}"
+                )
+                if o.get("source_file"):
+                    bit += f" ({o.get('source_file')})"
+                if o.get("quote"):
+                    bit += f' quote="{o.get("quote")}"'
+                detail_parts.append(bit)
             conflict_field = f"{field}:{account_id}" if account_id else field
             conflicts.append(
                 {
                     "field": conflict_field,
-                    "details": details,
+                    "details": "; ".join(detail_parts),
                     "observations": group,
                 }
             )
 
-        # Choose draft value
         if field == "account_value":
             chosen, resolvable = _pick_by_freshness(group)
             if has_conflict and not resolvable:
@@ -192,10 +239,21 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
                 )
                 draft = None
                 if account_id:
-                    acc = accounts.setdefault(account_id, {"account_id": account_id})
-                    acc["value"] = None
-                    acc["value_conflict"] = True
-                    acc["needs_review"] = True
+                    acc = _ensure_account(account_id)
+                    if acc is not None:
+                        acc["value"] = None
+                        acc["value_conflict"] = True
+                        acc["needs_review"] = True
+                        acc["value_alternates"] = [
+                            {
+                                "value": o.get("value"),
+                                "source_role": o.get("source_role"),
+                                "source_file": o.get("source_file"),
+                                "as_of": o.get("as_of"),
+                                "quote": o.get("quote"),
+                            }
+                            for o in group
+                        ]
             else:
                 draft = chosen
         else:
@@ -216,17 +274,33 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
         }
 
         if account_id and field.startswith("account_"):
-            acc = accounts.setdefault(account_id, {"account_id": account_id})
+            acc = _ensure_account(account_id)
+            if acc is None:
+                continue
             if field == "account_value":
                 acc["value"] = entry["value"]
                 acc["value_source"] = entry["source"]
                 acc["value_source_file"] = entry["source_file"]
                 acc["as_of"] = entry["as_of"]
                 acc["value_conflict"] = has_conflict
+                if draft.get("approximate"):
+                    acc["approximate"] = True
+                    acc["needs_review"] = True
                 if has_conflict:
                     acc["needs_review"] = True
+                    acc["value_alternates"] = [
+                        {
+                            "value": o.get("value"),
+                            "source_role": o.get("source_role"),
+                            "source_file": o.get("source_file"),
+                            "as_of": o.get("as_of"),
+                            "quote": o.get("quote"),
+                        }
+                        for o in group
+                        if values_materially_differ(o.get("value"), entry["value"])
+                        or o.get("source_role") != entry["source"]
+                    ]
             else:
-                # account_type → type, etc.
                 short = field.removeprefix("account_")
                 acc[short] = entry["value"]
                 acc[f"{short}_source"] = entry["source"]
@@ -245,14 +319,12 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
     if "selling" in facts:
         selling = bool(facts["selling"]["value"])
 
-    # Seed human-only review markers
     for item in FEE_REVIEW_ITEMS:
         if item not in review_items:
             review_items.append(item)
     if selling and CGT_REVIEW_ITEM not in review_items:
         review_items.append(CGT_REVIEW_ITEM)
 
-    # Deduplicate review items preserving order
     seen: set[str] = set()
     deduped_review: list[str] = []
     for item in review_items:
