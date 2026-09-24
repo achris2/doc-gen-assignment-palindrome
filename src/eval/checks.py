@@ -2,7 +2,11 @@
 
 Usage:
     python -m eval.checks
-    python -m eval.checks --outputs-dir outputs --data-dir data
+    python -m eval.checks --outputs-dir outputs/runs/prompt-v3 --record
+
+Write a qualitative note at outputs/runs/prompt-v3/notes.md before recording.
+The history log compares each check with the last time that client and check
+were scored, so a one-client run is not judged against a four-client total.
 """
 
 from __future__ import annotations
@@ -11,6 +15,7 @@ import argparse
 import json
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +40,7 @@ class CheckResult:
     passed: bool
     evidence: str = ""
     expected: str = ""
+    question: str = "story"
 
 
 @dataclass
@@ -116,7 +122,9 @@ def discover_clients(outputs_dir: Path, data_dir: Path) -> list[ClientBundle]:
     bundles: list[ClientBundle] = []
     for path in sorted(outputs_dir.glob("client_*.md")):
         name = path.stem
-        facts_path = outputs_dir / name / "facts.json"
+        facts_path = outputs_dir / name / "case_facts.json"
+        if not facts_path.exists():
+            facts_path = outputs_dir / name / "facts.json"
         facts: dict[str, Any] = {}
         if facts_path.exists():
             facts = json.loads(facts_path.read_text(encoding="utf-8"))
@@ -282,17 +290,151 @@ def check_conflicts_surfaced(bundle: ClientBundle) -> CheckResult:
     )
 
 
+def _tagged(result: CheckResult, question: str) -> CheckResult:
+    result.question = question
+    return result
+
+
+def check_sources_read(bundle: ClientBundle) -> CheckResult:
+    sources = bundle.facts.get("sources") or []
+    if not sources:
+        return CheckResult(
+            client=bundle.name,
+            check="sources_read",
+            passed=False,
+            question="read",
+            evidence="No sources on case_facts.json",
+            expected="Core files parsed; images skipped",
+        )
+    problems = []
+    for row in sources:
+        file_name = str(row.get("file") or "")
+        status = row.get("status")
+        if file_name.lower().endswith((".png", ".jpg", ".jpeg")) and status != "skipped":
+            problems.append(f"{file_name} not skipped")
+        if row.get("role") in {"request", "meeting", "db"} and status != "parsed":
+            problems.append(f"{file_name} not parsed")
+    return CheckResult(
+        client=bundle.name,
+        check="sources_read",
+        passed=not problems,
+        question="read",
+        evidence="" if not problems else "; ".join(problems),
+        expected="Core files parsed; images skipped",
+    )
+
+
+def check_fact_shape(bundle: ClientBundle) -> CheckResult:
+    facts = bundle.facts.get("facts")
+    if not isinstance(facts, list):
+        return CheckResult(
+            client=bundle.name,
+            check="fact_shape",
+            passed=False,
+            question="facts",
+            evidence="facts is not a list",
+            expected="Each fact has id, source file, excerpt, and kind when monetary",
+        )
+    problems = []
+    for fact in facts:
+        if not fact.get("id") or not fact.get("source_file") or not fact.get("excerpt"):
+            problems.append(f"incomplete {fact.get('field')}")
+        kind = fact.get("kind")
+        if kind and kind not in {
+            "account_balance",
+            "transfer_amount",
+            "received_proceeds",
+            "loan_repayment",
+            "contingent_proceeds",
+        }:
+            problems.append(f"bad kind {kind}")
+        if fact.get("conflict") and len(fact.get("evidence") or []) < 2:
+            problems.append(f"{fact.get('id')} conflict missing evidence")
+    return CheckResult(
+        client=bundle.name,
+        check="fact_shape",
+        passed=not problems,
+        question="facts",
+        evidence="" if not problems else "; ".join(problems),
+        expected="Each fact has id, source file, excerpt, and kind when monetary",
+    )
+
+
+def check_actions_and_items(bundle: ClientBundle) -> CheckResult:
+    from agent_pipeline.reconcile import amounts_match_action
+
+    actions = {a.get("id"): a for a in bundle.facts.get("actions") or []}
+    fact_ids = {f.get("id") for f in bundle.facts.get("facts") or [] if isinstance(f, dict)}
+    problems = []
+    for action in actions.values():
+        if not str(action.get("id") or "").startswith("a-"):
+            problems.append(f"bad id {action.get('id')}")
+        if "kind" in action:
+            problems.append(f"{action.get('id')} has kind")
+        if action.get("supports") not in fact_ids:
+            problems.append(f"{action.get('id')} supports missing")
+    items = ((bundle.facts.get("sections") or {}).get("recommendation") or {}).get("items") or []
+    seen = [item.get("action_id") for item in items]
+    if actions and seen != list(actions):
+        problems.append("recommendation items are not one per action")
+    for item in items:
+        action = actions.get(item.get("action_id"))
+        if action and not amounts_match_action(str(item.get("text") or ""), action.get("amount")):
+            problems.append(f"{item.get('action_id')} amount mismatch")
+    return CheckResult(
+        client=bundle.name,
+        check="action_items",
+        passed=not problems,
+        question="section",
+        evidence="" if not problems else "; ".join(problems),
+        expected="One item per action and each £ matches that action only",
+    )
+
+
 def run_checks(bundles: list[ClientBundle]) -> list[CheckResult]:
     results: list[CheckResult] = []
     for bundle in bundles:
-        results.append(check_fca_line(bundle))
-        results.append(check_risk_warning(bundle))
-        results.append(check_tax_iff_selling(bundle))
-        results.append(check_no_pounds_in_background_summary(bundle))
-        results.append(check_table_account_ids(bundle))
-        results.append(check_body_review_in_footer(bundle))
-        results.append(check_conflicts_surfaced(bundle))
+        results.append(check_sources_read(bundle))
+        results.append(check_fact_shape(bundle))
+        results.append(_tagged(check_fca_line(bundle), "section"))
+        results.append(_tagged(check_risk_warning(bundle), "section"))
+        results.append(check_actions_and_items(bundle))
+        results.append(_tagged(check_no_pounds_in_background_summary(bundle), "section"))
+        results.append(_tagged(check_body_review_in_footer(bundle), "section"))
+        results.append(_tagged(check_tax_iff_selling(bundle), "story"))
+        results.append(_tagged(check_table_account_ids(bundle), "story"))
+        results.append(_tagged(check_conflicts_surfaced(bundle), "story"))
     return results
+
+
+def question_counts(results: list[CheckResult]) -> dict[str, dict[str, int]]:
+    buckets: dict[str, dict[str, int]] = {}
+    for result in results:
+        bucket = buckets.setdefault(result.question, {"passed": 0, "total": 0})
+        bucket["total"] += 1
+        if result.passed:
+            bucket["passed"] += 1
+    return buckets
+
+
+def format_eval(results: list[CheckResult]) -> str:
+    """Four headings. No single averaged score."""
+    counts = question_counts(results)
+    lines = ["# Eval", ""]
+    for question in ("read", "facts", "section", "story"):
+        bucket = counts.get(question, {"passed": 0, "total": 0})
+        lines.append(f"## {question.title()}")
+        lines.append("")
+        lines.append(f"{bucket['passed']}/{bucket['total']} passing")
+        lines.append("")
+        for result in results:
+            if result.question != question:
+                continue
+            mark = "PASS" if result.passed else "FAIL"
+            evidence = (result.evidence or "").replace("\n", " ")
+            lines.append(f"- {result.client} `{result.check}` {mark} {evidence}".rstrip())
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def format_scorecard(results: list[CheckResult]) -> str:
@@ -328,6 +470,166 @@ def write_scorecard(results: list[CheckResult], path: Path) -> Path:
     return path
 
 
+def make_record(
+    results: list[CheckResult],
+    *,
+    run: str,
+    note: str = "",
+    recorded_at: str | None = None,
+) -> dict[str, Any]:
+    """One history row: scores plus the qualitative note for this run."""
+    clients = sorted({r.client for r in results})
+    return {
+        "run": run,
+        "recorded_at": recorded_at or datetime.now().isoformat(timespec="seconds"),
+        "note": note.strip(),
+        "clients": clients,
+        "passed": sum(1 for r in results if r.passed),
+        "total": len(results),
+        "questions": question_counts(results),
+        "checks": [
+            {
+                "client": r.client,
+                "check": r.check,
+                "passed": r.passed,
+                "question": r.question,
+                "evidence": r.evidence,
+            }
+            for r in results
+        ],
+    }
+
+
+def load_history(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line:
+            rows.append(json.loads(line))
+    return rows
+
+
+def append_history(record: dict[str, Any], path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+    return path
+
+
+def _latest_prior(
+    history: list[dict[str, Any]], client: str, check: str
+) -> bool | None:
+    for record in reversed(history):
+        for item in record.get("checks") or []:
+            if item.get("client") == client and item.get("check") == check:
+                return bool(item.get("passed"))
+    return None
+
+
+def delta_against_history(
+    record: dict[str, Any], history: list[dict[str, Any]]
+) -> dict[str, list[str]]:
+    """Compare this run with the last time each client/check was scored."""
+    improved: list[str] = []
+    regressed: list[str] = []
+    unchanged: list[str] = []
+    new: list[str] = []
+    for item in record.get("checks") or []:
+        label = f"{item['client']}:{item['check']}"
+        prior = _latest_prior(history, item["client"], item["check"])
+        passed = bool(item.get("passed"))
+        if prior is None:
+            new.append(label)
+        elif prior and not passed:
+            regressed.append(label)
+        elif not prior and passed:
+            improved.append(label)
+        else:
+            unchanged.append(label)
+    return {
+        "improved": improved,
+        "regressed": regressed,
+        "unchanged": unchanged,
+        "new": new,
+    }
+
+
+def read_run_note(outputs_dir: Path, note: str | None = None) -> str:
+    """Prefer an explicit note, then notes.md in the run directory."""
+    if note and note.strip():
+        return note.strip()
+    path = outputs_dir / "notes.md"
+    if path.exists():
+        return path.read_text(encoding="utf-8").strip()
+    return ""
+
+
+def format_delta(delta: dict[str, list[str]]) -> str:
+    parts = [
+        f"+{len(delta['improved'])} improved",
+        f"-{len(delta['regressed'])} regressed",
+        f"{len(delta['new'])} new",
+    ]
+    return ", ".join(parts)
+
+
+def format_history(history: list[dict[str, Any]]) -> str:
+    """Markdown log: one row per run, then the note and check movement."""
+    lines = [
+        "# Eval history",
+        "",
+        "Each row is one generation. Delta is against the previous time that same client and check were scored.",
+        "",
+        "| Run | When | Read | Facts | Section | Story | Delta | Qualitative |",
+        "|-----|------|------|-------|---------|-------|-------|-------------|",
+    ]
+    prior: list[dict[str, Any]] = []
+    details: list[str] = []
+    for record in history:
+        delta = delta_against_history(record, prior)
+        questions = record.get("questions") or {}
+        def _cell(name: str) -> str:
+            bucket = questions.get(name) or {}
+            if not bucket:
+                return ""
+            return f"{bucket.get('passed', 0)}/{bucket.get('total', 0)}"
+        note = (record.get("note") or "").replace("\n", " ").replace("|", "\\|")
+        if len(note) > 120:
+            note = note[:117] + "..."
+        clients = ", ".join(record.get("clients") or [])
+        lines.append(
+            f"| {record.get('run', '')} ({clients}) | {record.get('recorded_at', '')} | "
+            f"{_cell('read')} | {_cell('facts')} | {_cell('section')} | {_cell('story')} | "
+            f"{format_delta(delta)} | {note} |"
+        )
+        moved = []
+        if delta["improved"]:
+            moved.append("Improved: " + ", ".join(delta["improved"]))
+        if delta["regressed"]:
+            moved.append("Regressed: " + ", ".join(delta["regressed"]))
+        if moved or record.get("note"):
+            details.append(f"## {record.get('run', '')}")
+            details.append("")
+            if record.get("note"):
+                details.append(record["note"].strip())
+                details.append("")
+            if moved:
+                details.extend(f"- {line}" for line in moved)
+                details.append("")
+        prior.append(record)
+    lines.append("")
+    lines.extend(details)
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def write_history_markdown(history: list[dict[str, Any]], path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(format_history(history), encoding="utf-8")
+    return path
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run deterministic report checks.")
     parser.add_argument("--outputs-dir", type=Path, default=Path("outputs"))
@@ -335,7 +637,33 @@ def main() -> None:
     parser.add_argument(
         "--scorecard",
         type=Path,
-        default=Path("outputs/eval/scorecard.md"),
+        default=None,
+        help="Defaults to <outputs-dir>/scorecard.md when --record is set, else outputs/eval/scorecard.md",
+    )
+    parser.add_argument(
+        "--record",
+        action="store_true",
+        help="Append this run to the history log, including failures",
+    )
+    parser.add_argument(
+        "--run",
+        default=None,
+        help="Run name recorded in the history. Defaults to the outputs directory name.",
+    )
+    parser.add_argument(
+        "--note",
+        default=None,
+        help="Qualitative note. If omitted, notes.md in the outputs directory is used.",
+    )
+    parser.add_argument(
+        "--history",
+        type=Path,
+        default=Path("outputs/eval/history.jsonl"),
+    )
+    parser.add_argument(
+        "--history-md",
+        type=Path,
+        default=Path("outputs/eval/history.md"),
     )
     args = parser.parse_args()
 
@@ -344,10 +672,43 @@ def main() -> None:
         print(f"No client_*.md reports under {args.outputs_dir}")
         raise SystemExit(1)
     results = run_checks(bundles)
-    out = write_scorecard(results, args.scorecard)
-    passed = sum(1 for r in results if r.passed)
-    print(f"Wrote {out} ({passed}/{len(results)} passing)")
-    if passed < len(results):
+    eval_path = args.outputs_dir / "eval.md" if args.record else Path("outputs/eval/eval.md")
+    if args.scorecard is not None:
+        eval_path = args.scorecard
+    eval_path.parent.mkdir(parents=True, exist_ok=True)
+    eval_path.write_text(format_eval(results), encoding="utf-8")
+    counts = question_counts(results)
+    print(f"Wrote {eval_path}")
+    for name in ("read", "facts", "section", "story"):
+        bucket = counts.get(name, {"passed": 0, "total": 0})
+        print(f"{name}: {bucket['passed']}/{bucket['total']}")
+
+    if args.record:
+        history = load_history(args.history)
+        record = make_record(
+            results,
+            run=args.run or args.outputs_dir.name,
+            note=read_run_note(args.outputs_dir, args.note),
+        )
+        run_meta = next((b.facts.get("run") or {} for b in bundles if b.facts.get("run")), {})
+        if run_meta:
+            record["model"] = run_meta.get("model")
+            record["config_sha"] = run_meta.get("config_sha")
+            record["git_rev"] = run_meta.get("git_rev")
+        delta = delta_against_history(record, history)
+        append_history(record, args.history)
+        history.append(record)
+        md_path = write_history_markdown(history, args.history_md)
+        print(f"Recorded {record['run']} ({format_delta(delta)})")
+        print(f"Wrote {args.history}")
+        print(f"Wrote {md_path}")
+        if delta["regressed"]:
+            print("Regressed: " + ", ".join(delta["regressed"]))
+        if delta["improved"]:
+            print("Improved: " + ", ".join(delta["improved"]))
+
+    failed = [r for r in results if not r.passed]
+    if failed:
         raise SystemExit(1)
 
 
