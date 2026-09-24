@@ -110,7 +110,11 @@ def test_holdings_table_shows_conflict_and_null_review() -> None:
 
 def test_hitl_footer_always_present() -> None:
     facts = _sample_facts()
-    report = "# Investment Advice Report\n\n## Conclusion\n\nDone.\n"
+    report = (
+        "# Investment Advice Report\n\n"
+        "## Conclusion\n\nDone.\n"
+        "[REVIEW: confirm ongoing charges after report issuance]\n"
+    )
     out = append_hitl_footer(
         report,
         facts,
@@ -120,8 +124,9 @@ def test_hitl_footer_always_present() -> None:
     assert "### Conflicts" in out
     assert "account_value:H-GIA-J" in out
     assert "## Sources" in out
-    assert "retrieve:request" in out
+    assert "report_request.docx" in out or "db.json" in out
     assert "[REVIEW: platform fee]" in out
+    assert "[REVIEW: confirm ongoing charges after report issuance]" in out
 
 
 def test_tax_section_gated_by_selling() -> None:
