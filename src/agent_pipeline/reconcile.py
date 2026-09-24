@@ -32,6 +32,17 @@ FEE_REVIEW_ITEMS = (
 )
 CGT_REVIEW_ITEM = "[REVIEW: CGT figure]"
 
+MONEY_KINDS = frozenset(
+    {
+        "account_balance",
+        "transfer_amount",
+        "received_proceeds",
+        "loan_repayment",
+        "contingent_proceeds",
+    }
+)
+_REQUEST_AMOUNT_KIND = {"investment_amount": "transfer_amount"}
+
 # Relative/absolute tolerance for numeric "materially different"
 _ABS_TOL = 1.0  # £1
 _REL_TOL = 0.001  # 0.1%
@@ -79,10 +90,20 @@ def values_materially_differ(a: Any, b: Any) -> bool:
     return sa != sb
 
 
-def _group_key(obs: dict[str, Any]) -> tuple[str, str | None]:
+def money_kind(obs: dict[str, Any]) -> str | None:
+    """What a source number means. Balances stay balances when kind is omitted."""
+    kind = obs.get("kind")
+    if kind in MONEY_KINDS:
+        return str(kind)
+    if obs.get("field") == "account_value":
+        return "account_balance"
+    return _REQUEST_AMOUNT_KIND.get(str(obs.get("field") or ""))
+
+
+def _group_key(obs: dict[str, Any]) -> tuple[str, str | None, str | None]:
     field = str(obs.get("field") or "")
     account_id = obs.get("account_id")
-    return field, str(account_id) if account_id else None
+    return field, str(account_id) if account_id else None, money_kind(obs)
 
 
 def _preferred_role(field: str) -> str | None:
@@ -168,7 +189,7 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
         review_items.append(f"[REVIEW: unmatched figure: {quote}]")
     observations = filtered
 
-    groups: dict[tuple[str, str | None], list[dict[str, Any]]] = {}
+    groups: dict[tuple[str, str | None, str | None], list[dict[str, Any]]] = {}
     for obs in observations:
         if not obs.get("field"):
             continue
@@ -184,8 +205,8 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
             return None
         return accounts[account_id]
 
-    for (field, account_id), group in sorted(
-        groups.items(), key=lambda x: (x[0][0], x[0][1] or "")
+    for (field, account_id, kind), group in sorted(
+        groups.items(), key=lambda x: (x[0][0], x[0][1] or "", x[0][2] or "")
     ):
         # Null account values → review, no invention
         if field == "account_value" and any(o.get("value") is None for o in group):
@@ -277,11 +298,20 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
             {
                 "field": field,
                 "account_id": account_id,
+                "kind": kind,
                 "draft": draft,
                 "group": group,
                 "conflict": has_conflict,
             }
         )
+
+        if (
+            account_id
+            and field == "account_value"
+            and kind not in (None, "account_balance")
+        ):
+            facts[f"{kind}:{account_id}"] = {**entry, "kind": kind}
+            continue
 
         if account_id and field.startswith("account_"):
             acc = _ensure_account(account_id)
@@ -355,15 +385,23 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
     }
 
 
-def excerpt_for(obs: dict[str, Any]) -> str:
+def excerpt_for(obs: dict[str, Any], *, kind: str | None = None) -> str:
     """Prose sources keep the quote. Structured sources keep field and value."""
     quote = obs.get("quote")
     if quote:
         return str(quote)
     account_id = obs.get("account_id")
-    label = str(obs.get("field") or "field")
+    label = kind or str(obs.get("field") or "field")
     prefix = f"{label} {account_id}" if account_id else label
     return f"{prefix} = {obs.get('value')}"
+
+
+def fact_id_for(field: str, account_id: str | None, kind: str | None) -> str:
+    if account_id and kind:
+        return f"f-account-{account_id}-{kind}"
+    if account_id:
+        return f"f-account-{account_id}-{field}"
+    return f"f-{field}"
 
 
 def sources_from_classifications(classifications: dict[str, str]) -> list[dict[str, str]]:
@@ -383,23 +421,28 @@ def build_case_document(
     case_facts = []
     for item in reconciled.get("recorded") or []:
         draft = item.get("draft") or {}
-        field = item.get("field")
+        field = str(item.get("field") or "")
         account_id = item.get("account_id")
-        fact_id = f"f-{field}" if not account_id else f"f-account-{account_id}-{field}"
+        kind = item.get("kind")
+        fact_id = fact_id_for(field, account_id, kind if field == "account_value" or kind else None)
+        if field != "account_value" and kind:
+            fact_id = f"f-{field}"
         case_facts.append(
             {
                 "id": fact_id,
                 "field": field,
                 "value": draft.get("value"),
                 "source_file": draft.get("source_file"),
-                "excerpt": excerpt_for(draft),
+                "excerpt": excerpt_for(draft, kind=kind),
                 "conflict": bool(item.get("conflict")),
+                "kind": kind,
                 "evidence": [
                     {
                         "source_file": obs.get("source_file"),
                         "source_role": obs.get("source_role"),
                         "value": obs.get("value"),
-                        "excerpt": excerpt_for(obs),
+                        "kind": money_kind(obs),
+                        "excerpt": excerpt_for(obs, kind=money_kind(obs)),
                     }
                     for obs in item.get("group") or []
                 ],

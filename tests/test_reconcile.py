@@ -173,3 +173,22 @@ def test_conflict_evidence_stays_on_the_case_fact() -> None:
     assert fact["conflict"] is True
     assert len(fact["evidence"]) == 2
     assert fact["excerpt"] == "GIA looked nearer forty-five"
+
+
+def test_transfer_is_not_stored_as_account_balance() -> None:
+    observations = [
+        _obs("account_value", 25000, "db", as_of="2026-04-30", account_id="H-CASH-01", source_file="client_data_db.json"),
+        _obs("account_value", 20000, "meeting", as_of="2026-05-12", account_id="H-CASH-01", source_file="meeting_notes.docx"),
+    ]
+    observations[1]["kind"] = "transfer_amount"
+    observations[1]["quote"] = "move £20,000 from the cash account"
+    facts = reconcile_observations(observations)
+    acc = next(a for a in facts["accounts"] if a["account_id"] == "H-CASH-01")
+    assert acc["value"] == 25000
+    case = build_case_document(facts, {})
+    balance = next(f for f in case["facts"] if f["kind"] == "account_balance")
+    transfer = next(f for f in case["facts"] if f["kind"] == "transfer_amount")
+    assert balance["id"] == "f-account-H-CASH-01-account_balance"
+    assert transfer["id"] == "f-account-H-CASH-01-transfer_amount"
+    assert transfer["conflict"] is False
+    assert transfer["excerpt"] == "move £20,000 from the cash account"

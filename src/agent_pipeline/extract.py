@@ -8,6 +8,8 @@ from typing import Any, Literal
 
 from openai import OpenAI
 
+from agent_pipeline.reconcile import MONEY_KINDS
+
 SourceRole = Literal["request", "meeting", "db", "unknown"]
 
 # Canonical request labels → fact field names
@@ -36,6 +38,7 @@ Return ONLY valid JSON (no markdown fences):
       "account_id": "MUST be one of the known account ids listed below, or null",
       "as_of": "YYYY-MM-DD if known for this observation, else null",
       "approximate": true,
+      "kind": "account_balance|transfer_amount|received_proceeds|loan_repayment|contingent_proceeds|null",
       "quote": "exact sentence from the note supporting this observation"
     }}
   ]
@@ -52,6 +55,10 @@ Rules:
 - If the note describes an account without a clear id match, set account_id to null and
   put the description in value; include quote.
 - value for account_value should be a number when a figure is stated (strip currency words).
+- kind describes what the source number means. Use transfer_amount when money is being moved,
+  invested, or withdrawn. Use account_balance only for a stated balance. Use received_proceeds,
+  loan_repayment, or contingent_proceeds when those are what the note describes. Never label a
+  transfer as account_balance.
 - approximate is true when the note uses hedging language (around, about, a little over, etc.).
 - Prefer the meeting_date for as_of on meeting figures when a specific date is not given.
 - Do not invent fees, tax figures, or amounts not in the note.
@@ -92,6 +99,7 @@ def observation(
     account_id: str | None = None,
     quote: str | None = None,
     approximate: bool | None = None,
+    kind: str | None = None,
 ) -> dict[str, Any]:
     """Build one evidence observation."""
     obs: dict[str, Any] = {
@@ -108,6 +116,8 @@ def observation(
         obs["quote"] = quote
     if approximate is not None:
         obs["approximate"] = approximate
+    if kind is not None:
+        obs["kind"] = kind
     return obs
 
 
@@ -178,12 +188,14 @@ def extract_request_observations(
                 )
             )
         else:
+            kind = "transfer_amount" if field == "investment_amount" else None
             out.append(
                 observation(
                     field=field,
                     value=value,
                     source_role="request",
                     source_file=source_file,
+                    kind=kind,
                 )
             )
     return out
@@ -286,6 +298,7 @@ def extract_db_observations(
                 source_file=source_file,
                 account_id=account_id,
                 as_of=as_of_str,
+                kind="account_balance",
             )
         )
     return out
@@ -352,6 +365,9 @@ def _observations_from_llm_payload(
                 account_id = None
         quote = item.get("quote")
         approximate = item.get("approximate")
+        kind = item.get("kind")
+        if kind not in MONEY_KINDS:
+            kind = None
         out.append(
             observation(
                 field=str(field),
@@ -362,6 +378,7 @@ def _observations_from_llm_payload(
                 account_id=account_id,
                 quote=str(quote) if quote else None,
                 approximate=bool(approximate) if approximate is not None else None,
+                kind=kind,
             )
         )
     return out
