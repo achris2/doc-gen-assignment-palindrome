@@ -7,8 +7,11 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import os
+import subprocess
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -142,6 +145,24 @@ def build_narrative_context(
     return "\n\n".join(parts)
 
 
+def run_header(label: str, config_text: str, model: str) -> dict[str, Any]:
+    try:
+        revision = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        revision = "unknown"
+    return {
+        "label": label,
+        "recorded_at": datetime.now().isoformat(timespec="seconds"),
+        "model": model,
+        "config_sha": hashlib.sha256(config_text.encode("utf-8")).hexdigest(),
+        "git_rev": revision or "unknown",
+    }
+
+
 def generate_client_report(
     client_dir: Path,
     config: dict,
@@ -150,6 +171,8 @@ def generate_client_report(
     model: str,
     output_dir: Path,
     client_name: str,
+    run_label: str = "",
+    config_text: str = "",
 ) -> tuple[Path, Path]:
     """Full Retrieve → Extract → Reconcile → Write pipeline for one client."""
     classifications = classify_client_files(
@@ -165,7 +188,11 @@ def generate_client_report(
         typed, openai_client=openai_client, model=model
     )
     facts = reconcile_observations(observations)
-    case = build_case_document(facts, classifications)
+    case = build_case_document(
+        facts,
+        classifications,
+        run=run_header(run_label or client_name, config_text, model),
+    )
 
     client_out = output_dir / client_name
     facts_path = write_facts_json(case, client_out / "case_facts.json")
@@ -190,22 +217,35 @@ def main() -> None:
     parser.add_argument(
         "--config", type=Path, default=Path("config/template_config.json")
     )
-    parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
+    parser.add_argument("--output-dir", type=Path, default=None)
+    parser.add_argument(
+        "--run",
+        default=None,
+        help="Write outputs/runs/<timestamp>-<label>/ instead of outputs/",
+    )
     args = parser.parse_args()
 
     load_dotenv()
     model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
     client = OpenAI()
-    config = json.loads(args.config.read_text(encoding="utf-8"))
+    config_text = args.config.read_text(encoding="utf-8")
+    config = json.loads(config_text)
     client_dir = args.data_dir / args.client
+    if args.run:
+        stamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+        output_dir = Path("outputs") / "runs" / f"{stamp}-{args.run}"
+    else:
+        output_dir = args.output_dir or Path("outputs")
 
     out_path, facts_path = generate_client_report(
         client_dir,
         config,
         openai_client=client,
         model=model,
-        output_dir=args.output_dir,
+        output_dir=output_dir,
         client_name=args.client,
+        run_label=args.run or args.client,
+        config_text=config_text,
     )
     print(f"Wrote {out_path}")
     print(f"Wrote {facts_path}")

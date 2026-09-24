@@ -416,6 +416,8 @@ def sources_from_classifications(classifications: dict[str, str]) -> list[dict[s
 def build_case_document(
     reconciled: dict[str, Any],
     classifications: dict[str, str] | None = None,
+    *,
+    run: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """One case file: which inputs were read, and each fact with its evidence."""
     case_facts = []
@@ -450,6 +452,7 @@ def build_case_document(
             }
         )
     return {
+        "run": run or {},
         "sources": sources_from_classifications(classifications or {}),
         "facts": case_facts,
         "actions": build_actions(case_facts, reconciled),
