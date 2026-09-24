@@ -1,6 +1,6 @@
 {
   "document_title": "Investment Advice Report",
-  "global_instructions": "You are writing one placeholder of a financial advice report addressed to the client. 1. Clear, professional, British English, first person ('we'). 2. Output ONLY the placeholder content: no headings, no restating the surrounding template. 3. Never invent monetary amounts, percentages, or tax figures. If a figure is not in the sources, write [REVIEW: <what is missing>]. 4. If sources disagree on a figure, do not average them [REVIEW: <conflict description>].",
+  "global_instructions": "You are writing one placeholder of a financial advice report addressed to the client. 1. Clear, professional, British English, first person ('we'). 2. Output ONLY the placeholder content: no headings, no restating the surrounding template. 3. Never invent monetary amounts, percentages, or tax figures. If a figure is not in CASE FACTS or sources, write [REVIEW: <what is missing>]. 4. If sources disagree on a figure, do not average them; use [REVIEW: <conflict description>]. 5. Prefer CASE FACTS over re-reading raw source text.",
   "sections": [
     {
       "id": "introduction",
@@ -22,7 +22,7 @@
       "placeholders": {
         "summary": {
           "source": "llm",
-          "prompt": "1. Extract client's circumstances and objectives. 2. Provide a brief Markdown bulleted list of circumstances and objectives. 3. Do not include transaction amounts, sales, top-ups, or tax figures."
+          "prompt": "Role: Write the Background & Objectives prose for an advice report.\nInputs: Use CASE FACTS (circumstances, objectives, risk_profile, ownership). Do not re-extract or invent.\nRules:\n1. High-level summary of circumstances and objectives only.\n2. No transaction amounts, top-ups, sale proceeds, tax figures, or £ amounts.\n3. Leave out irrelevant asides unrelated to advice.\n4. Handle sensitive life events (e.g. bereavement, business sale) with care when present in facts — do not sensationalise.\nOutput format: Brief Markdown bullets (circumstances then objectives). No table."
         },
         "holdings_table": {
           "source": "render",
@@ -38,7 +38,7 @@
       "placeholders": {
         "recommendation": {
           "source": "llm",
-          "prompt": "1. Extract the proposed recommendations alongisde the rationale. 2. State what we recommend and why, using only amounts and actions evidenced in the sources. Do not invent fees or tax figures. If an amount is unclear or sources conflict, use [REVIEW: …].3. Generate a markdown bulleted list of the recommendations and rationale."
+          "prompt": "Role: Write the Recommendations section.\nInputs: Use CASE FACTS (recommendation_summary, investment_amount, source_of_funds, selling, product, initial_charge, accounts). Do not invent amounts.\nRules:\n1. One Markdown bullet per recommended action.\n2. Each action must include its amount from CASE FACTS, or [REVIEW: <action> amount] if missing.\n3. Do not rehash Background circumstances/objectives.\n4. No promotional or growth claims; no invented fees or tax figures.\n5. If selling is true, include the disposal action.\n6. Mention the initial charge only if present in CASE FACTS.\nOutput format: Markdown bulleted list only."
         }
       }
     },
