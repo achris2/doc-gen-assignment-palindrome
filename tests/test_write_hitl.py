@@ -3,12 +3,14 @@
 from agent_pipeline.hitl import append_hitl_footer, render_human_review, render_sources
 from agent_pipeline.reconcile import reconcile_observations
 from agent_pipeline.render import (
+    account_in_scope,
     render_cgt_statement,
     render_fees,
     render_holdings_table,
     render_scope,
+    resolve_scoped_accounts,
 )
-from agent_pipeline.schema import Observation, ReconciledFacts, SectionSpec
+from agent_pipeline.schema import Account, Observation, ReconciledFacts, SectionSpec, SourcedValue
 
 
 def _obs(field, value, role, *, source_file, account_id=None, as_of=None):
@@ -116,6 +118,81 @@ def test_tax_section_gated_by_selling() -> None:
     assert tax.applies(_facts(True)) is True
     assert tax.applies(_facts(False)) is False
     assert always.applies(_facts(False)) is True
+
+
+def _account(account_id: str, typ: str, *, status: str | None = None, value: object = 1000) -> Account:
+    account = Account(account_id=account_id, type=typ, value=value, status=status)
+    account._assigned.update({"type", "value"})
+    if status is not None:
+        account._assigned.add("status")
+    return account
+
+
+def _covered(text: str, accounts: list[Account]) -> ReconciledFacts:
+    return ReconciledFacts(
+        selling=False,
+        conflicts=[],
+        review_items=[],
+        facts={"accounts_covered": SourcedValue(value=text, source="request", source_file="req")},
+        accounts=accounts,
+        observation_count=0,
+    )
+
+
+def test_account_in_scope_matches_type_tokens() -> None:
+    isa = _account("H-ISA-01", "Stocks & Shares ISA")
+    gia = _account("H-GIA-J", "General Investment Account")
+    cash = _account("H-CASH-01", "Cash")
+    unknown = _account("H-99", "")
+
+    assert account_in_scope(isa, "")
+    assert account_in_scope(isa, "the Holloway portfolio")
+    assert account_in_scope(unknown, "ISA only")
+    assert account_in_scope(isa, "Stocks and shares ISA")
+    assert account_in_scope(gia, "the general investment account")
+    assert not account_in_scope(gia, "ISA only")
+    assert not account_in_scope(cash, "SIPP")
+    assert account_in_scope(cash, "cash and ISA")
+
+
+def test_resolve_scoped_accounts_drops_closed_and_out_of_scope() -> None:
+    facts = _covered(
+        "ISA only",
+        [
+            _account("H-ISA-01", "ISA", status="open"),
+            _account("H-ISA-OLD", "ISA", status="Closed"),
+            _account("H-GIA-J", "GIA"),
+        ],
+    )
+    ids = [account.account_id for account in resolve_scoped_accounts(facts)]
+    assert ids == ["H-ISA-01"]
+
+
+def test_resolve_scoped_accounts_adds_one_synthetic_new_joint() -> None:
+    existing = _account("H-ISA-01", "ISA")
+    facts = _covered("new joint account plus the ISA", [existing])
+    scoped = resolve_scoped_accounts(facts)
+    assert [account.account_id for account in scoped] == ["H-ISA-01", "New joint account"]
+    assert scoped[-1].synthetic is True
+    assert scoped[-1].type == "To be opened"
+
+    already = _account("NEW-1", "GIA")
+    already.mark_synthetic()
+    again = resolve_scoped_accounts(_covered("a new joint account and the ISA", [already, existing]))
+    assert [account.account_id for account in again] == ["NEW-1", "H-ISA-01"]
+
+
+def test_holdings_table_empty_and_synthetic_row() -> None:
+    empty = render_holdings_table(_covered("ISA", []))
+    assert "| [REVIEW: accounts] | — | — | — |" in empty
+
+    table = render_holdings_table(
+        _covered("new joint account and the ISA", [_account("H-ISA-01", "ISA", value=52000)])
+    )
+    assert "New joint account" in table
+    assert "To be opened" in table
+    assert "n/a" in table
+    assert "£52,000" in table
 
 
 def test_human_review_empty_conflicts_message() -> None:
