@@ -170,6 +170,7 @@ def slot_context(case: dict[str, Any], spec: dict[str, Any]) -> str:
                 f"- id={action.get('id')} amount={action.get('amount')!r} "
                 f"who={action.get('who')!r} product={action.get('product')!r} "
                 f"source_of_funds={action.get('source_of_funds')!r} "
+                f"summary={action.get('summary')!r} "
                 f"supports={action.get('supports')!r}"
             )
         return "\n".join(lines)
