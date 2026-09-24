@@ -19,7 +19,11 @@ from document_formatter.formatting import format_document
 
 from agent_pipeline.extract import extract_observations
 from agent_pipeline.hitl import append_hitl_footer
-from agent_pipeline.reconcile import reconcile_observations, write_facts_json
+from agent_pipeline.reconcile import (
+    build_case_document,
+    reconcile_observations,
+    write_facts_json,
+)
 from agent_pipeline.render import (
     facts_context_block,
     render_cgt_statement,
@@ -161,9 +165,10 @@ def generate_client_report(
         typed, openai_client=openai_client, model=model
     )
     facts = reconcile_observations(observations)
+    case = build_case_document(facts, classifications)
 
     client_out = output_dir / client_name
-    facts_path = write_facts_json(facts, client_out / "facts.json")
+    facts_path = write_facts_json(case, client_out / "case_facts.json")
 
     narrative = build_narrative_context(facts, typed)
     generator = ReportGenerator(openai_client, model)

@@ -2,6 +2,7 @@
 
 from agent_pipeline.reconcile import (
     CGT_REVIEW_ITEM,
+    build_case_document,
     reconcile_observations,
     values_materially_differ,
 )
@@ -157,3 +158,18 @@ def test_phantom_meeting_account_id_does_not_create_row() -> None:
     assert "joint_GIA" not in ids
     assert "H-GIA-J" in ids
     assert any("unmatched figure" in item for item in facts["review_items"])
+
+
+def test_conflict_evidence_stays_on_the_case_fact() -> None:
+    observations = [
+        _obs("account_value", 40000, "db", as_of="2026-03-15", account_id="H-GIA-J", source_file="db.json"),
+        _obs("account_value", 45000, "meeting", as_of="2026-05-14", account_id="H-GIA-J", source_file="meeting.docx"),
+    ]
+    observations[1]["quote"] = "GIA looked nearer forty-five"
+    facts = reconcile_observations(observations)
+    case = build_case_document(facts, {"db.json": "db", "meeting.docx": "meeting", "photo.png": "noise"})
+    assert any(row["status"] == "skipped" for row in case["sources"])
+    fact = next(item for item in case["facts"] if item["field"] == "account_value")
+    assert fact["conflict"] is True
+    assert len(fact["evidence"]) == 2
+    assert fact["excerpt"] == "GIA looked nearer forty-five"

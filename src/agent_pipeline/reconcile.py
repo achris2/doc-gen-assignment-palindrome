@@ -176,6 +176,7 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
 
     conflicts: list[dict[str, Any]] = []
     facts: dict[str, Any] = {}
+    recorded: list[dict[str, Any]] = []
 
     def _ensure_account(account_id: str) -> dict[str, Any] | None:
         """Only touch accounts that already exist from db."""
@@ -272,6 +273,15 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
             "account_id": account_id,
             "conflict": has_conflict,
         }
+        recorded.append(
+            {
+                "field": field,
+                "account_id": account_id,
+                "draft": draft,
+                "group": group,
+                "conflict": has_conflict,
+            }
+        )
 
         if account_id and field.startswith("account_"):
             acc = _ensure_account(account_id)
@@ -341,6 +351,67 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
         "facts": facts,
         "accounts": sorted(accounts.values(), key=lambda a: a["account_id"]),
         "observation_count": len(observations),
+        "recorded": recorded,
+    }
+
+
+def excerpt_for(obs: dict[str, Any]) -> str:
+    """Prose sources keep the quote. Structured sources keep field and value."""
+    quote = obs.get("quote")
+    if quote:
+        return str(quote)
+    account_id = obs.get("account_id")
+    label = str(obs.get("field") or "field")
+    prefix = f"{label} {account_id}" if account_id else label
+    return f"{prefix} = {obs.get('value')}"
+
+
+def sources_from_classifications(classifications: dict[str, str]) -> list[dict[str, str]]:
+    image = {".png", ".jpg", ".jpeg"}
+    rows = []
+    for name, role in sorted(classifications.items()):
+        status = "skipped" if Path(name).suffix.lower() in image else "parsed"
+        rows.append({"file": name, "role": role, "status": status})
+    return rows
+
+
+def build_case_document(
+    reconciled: dict[str, Any],
+    classifications: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """One case file: which inputs were read, and each fact with its evidence."""
+    case_facts = []
+    for item in reconciled.get("recorded") or []:
+        draft = item.get("draft") or {}
+        field = item.get("field")
+        account_id = item.get("account_id")
+        fact_id = f"f-{field}" if not account_id else f"f-account-{account_id}-{field}"
+        case_facts.append(
+            {
+                "id": fact_id,
+                "field": field,
+                "value": draft.get("value"),
+                "source_file": draft.get("source_file"),
+                "excerpt": excerpt_for(draft),
+                "conflict": bool(item.get("conflict")),
+                "evidence": [
+                    {
+                        "source_file": obs.get("source_file"),
+                        "source_role": obs.get("source_role"),
+                        "value": obs.get("value"),
+                        "excerpt": excerpt_for(obs),
+                    }
+                    for obs in item.get("group") or []
+                ],
+            }
+        )
+    return {
+        "sources": sources_from_classifications(classifications or {}),
+        "facts": case_facts,
+        "selling": reconciled.get("selling"),
+        "conflicts": reconciled.get("conflicts") or [],
+        "review_items": reconciled.get("review_items") or [],
+        "accounts": reconciled.get("accounts") or [],
     }
 
 
