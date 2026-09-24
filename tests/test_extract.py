@@ -46,20 +46,20 @@ def test_extract_request_observations_deterministic() -> None:
         "Initial charge | 0%\n"
     )
     obs = extract_request_observations(text, "report_request.docx")
-    by_field = {o["field"]: o for o in obs}
-    assert by_field["selling"]["value"] is False
-    assert by_field["accounts_covered"]["value"] == "Holloway ISA"
-    assert by_field["investment_amount"]["value"] == "GBP 20,000"
-    assert by_field["initial_charge"]["value"] == "0%"
-    assert all(o["source_role"] == "request" for o in obs)
+    by_field = {o.field: o for o in obs}
+    assert by_field["selling"].value is False
+    assert by_field["accounts_covered"].value == "Holloway ISA"
+    assert by_field["investment_amount"].value == "GBP 20,000"
+    assert by_field["initial_charge"].value == "0%"
+    assert all(o.source_role == "request" for o in obs)
 
 
 def test_extract_request_selling_with_parenthetical() -> None:
     text = "Selling existing investments? | Yes (partial rebalance of the Holloway joint GIA)\n"
     obs = extract_request_observations(text, "report_request.docx")
     assert len(obs) == 1
-    assert obs[0]["field"] == "selling"
-    assert obs[0]["value"] is True
+    assert obs[0].field == "selling"
+    assert obs[0].value is True
 
 
 def test_extract_request_fallback_when_unrecognized() -> None:
@@ -77,9 +77,9 @@ def test_extract_request_fallback_when_unrecognized() -> None:
         openai_client=client,
         model="test",
     )
-    by_field = {o["field"]: o for o in obs}
-    assert by_field["selling"]["value"] is True
-    assert by_field["accounts_covered"]["value"] == "ISA"
+    by_field = {o.field: o for o in obs}
+    assert by_field["selling"].value is True
+    assert by_field["accounts_covered"].value == "ISA"
     assert client.chat.completions.create.called
 
 
@@ -121,7 +121,7 @@ def test_parse_db_dedupes_joint_accounts() -> None:
         },
     }
     accounts = parse_db_accounts(data)
-    ids = [a["account_id"] for a in accounts]
+    ids = [a.account_id for a in accounts]
     assert ids.count("H-GIA-J") == 1
     assert "H-ISA-S" in ids
 
@@ -148,25 +148,21 @@ def test_extract_db_preserves_null_values() -> None:
     }
     obs = extract_db_observations(data, "client_data_db.json")
     values = [
-        o for o in obs if o["field"] == "account_value" and o["account_id"] == "H-CASH-JE"
+        o for o in obs if o.field == "account_value" and o.account_id == "H-CASH-JE"
     ]
     assert len(values) == 1
-    assert values[0]["value"] is None
-    assert values[0]["source_role"] == "db"
+    assert values[0].value is None
+    assert values[0].source_role == "db"
 
 
 def test_extract_db_from_real_client_01() -> None:
     path = Path(__file__).resolve().parents[1] / "data/client_01_clean/client_data_db.json"
     obs = extract_db_observations(path, path.name)
-    value_ids = {
-        o["account_id"] for o in obs if o["field"] == "account_value"
-    }
+    value_ids = {o.account_id for o in obs if o.field == "account_value"}
     assert value_ids == {"H-ISA-01", "H-CASH-01"}
-    isa = next(
-        o for o in obs if o["field"] == "account_value" and o["account_id"] == "H-ISA-01"
-    )
-    assert isa["value"] == 52000.0
-    assert isa["as_of"] == "2026-04-30"
+    isa = next(o for o in obs if o.field == "account_value" and o.account_id == "H-ISA-01")
+    assert isa.value == 52000.0
+    assert isa.as_of == "2026-04-30"
 
 
 def test_extract_meeting_uses_llm_and_provenance() -> None:
@@ -201,12 +197,12 @@ def test_extract_meeting_uses_llm_and_provenance() -> None:
         openai_client=client,
         model="test",
     )
-    by_field = {o["field"]: o for o in obs}
-    assert by_field["circumstances"]["source_role"] == "meeting"
-    assert by_field["circumstances"]["as_of"] == "2026-05-14"
-    assert by_field["account_value"]["value"] == 45000
-    assert by_field["account_value"]["account_id"] == "H-GIA-J"
-    assert by_field["account_value"]["as_of"] == "2026-05-14"
+    by_field = {o.field: o for o in obs}
+    assert by_field["circumstances"].source_role == "meeting"
+    assert by_field["circumstances"].as_of == "2026-05-14"
+    assert by_field["account_value"].value == 45000
+    assert by_field["account_value"].account_id == "H-GIA-J"
+    assert by_field["account_value"].as_of == "2026-05-14"
 
 
 def test_extract_observations_composes_typed_sources(tmp_path: Path) -> None:
@@ -256,7 +252,7 @@ def test_extract_observations_composes_typed_sources(tmp_path: Path) -> None:
         }
     )
     obs = extract_observations(typed, openai_client=client, model="test")
-    roles = {o["source_role"] for o in obs}
+    roles = {o.source_role for o in obs}
     assert roles >= {"request", "db", "meeting"}
-    assert any(o["field"] == "selling" and o["value"] is False for o in obs)
-    assert any(o["field"] == "objectives" for o in obs)
+    assert any(o.field == "selling" and o.value is False for o in obs)
+    assert any(o.field == "objectives" for o in obs)

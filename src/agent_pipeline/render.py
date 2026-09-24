@@ -2,12 +2,7 @@
 
 from typing import Any
 
-
-def _fact_value(facts: dict[str, Any], field: str, default: str = "") -> Any:
-    entry = (facts.get("facts") or {}).get(field)
-    if isinstance(entry, dict):
-        return entry.get("value", default)
-    return default
+from agent_pipeline.schema import Account, ReconciledFacts
 
 
 def format_money(value: Any) -> str:
@@ -19,8 +14,8 @@ def format_money(value: Any) -> str:
     return text if text else "[REVIEW: missing value]"
 
 
-def render_scope(facts: dict[str, Any]) -> str:
-    covered = _fact_value(facts, "accounts_covered")
+def render_scope(facts: ReconciledFacts) -> str:
+    covered = facts.fact_value("accounts_covered")
     if covered:
         return str(covered)
     return "[REVIEW: accounts covered]"
@@ -30,19 +25,9 @@ def _type_tokens(text: str) -> set[str]:
     """Generic account-type tokens from free text (no platform name allowlists)."""
     lower = text.lower()
     tokens: set[str] = set()
-    for word in (
-        "isa",
-        "gia",
-        "sipp",
-        "pension",
-        "bond",
-        "cash",
-        "offshore",
-        "joint",
-    ):
+    for word in ("isa", "gia", "sipp", "pension", "bond", "cash", "offshore", "joint"):
         if word in lower:
             tokens.add(word)
-    # Stocks & Shares ISA etc.
     if "stocks" in lower and "shares" in lower:
         tokens.add("isa")
     if "general investment" in lower:
@@ -50,83 +35,67 @@ def _type_tokens(text: str) -> set[str]:
     return tokens
 
 
-def account_in_scope(account: dict[str, Any], covered: str) -> bool:
+def account_in_scope(account: Account, covered: str) -> bool:
     """Deterministic match of a db account against request accounts_covered text."""
-    if not covered or not str(covered).strip():
+    if not covered or not covered.strip():
         return True
-    covered_tokens = _type_tokens(str(covered))
+    covered_tokens = _type_tokens(covered)
     if not covered_tokens:
         return True
-
-    typ = str(account.get("type") or "")
-    aid = str(account.get("account_id") or "")
-    account_tokens = _type_tokens(f"{typ} {aid}")
+    account_tokens = _type_tokens(f"{account.type or ''} {account.account_id}")
     if not account_tokens:
-        # Unknown type — include when coverage is non-empty so we do not hide
-        # accounts the matcher cannot classify; REVIEW is for humans.
         return True
     return bool(account_tokens.intersection(covered_tokens))
 
 
-def resolve_scoped_accounts(facts: dict[str, Any]) -> list[dict[str, Any]]:
+def resolve_scoped_accounts(facts: ReconciledFacts) -> list[Account]:
     """Filter accounts: skip closed; keep in-scope; optional new-account row."""
-    covered = str(_fact_value(facts, "accounts_covered") or "")
-    accounts = facts.get("accounts") or []
-    scoped: list[dict[str, Any]] = []
-    for acc in accounts:
-        status = str(acc.get("status") or "").lower()
-        if status == "closed":
+    covered = str(facts.fact_value("accounts_covered") or "")
+    scoped: list[Account] = []
+    for account in facts.accounts:
+        if str(account.status or "").lower() == "closed":
             continue
-        if acc.get("synthetic"):
-            scoped.append(acc)
-            continue
-        if account_in_scope(acc, covered):
-            scoped.append(acc)
+        if account.synthetic or account_in_scope(account, covered):
+            scoped.append(account)
 
     covered_l = covered.lower()
-    wants_new = "new" in covered_l and (
-        "account" in covered_l or "joint" in covered_l
-    )
-    if wants_new and not any(a.get("synthetic") for a in scoped):
-        scoped.append(
-            {
-                "account_id": "New joint account",
-                "owner": "Joint",
-                "type": "To be opened",
-                "value": "n/a",
-                "synthetic": True,
-            }
+    wants_new = "new" in covered_l and ("account" in covered_l or "joint" in covered_l)
+    if wants_new and not any(account.synthetic for account in scoped):
+        synthetic = Account(
+            account_id="New joint account",
+            owner="Joint",
+            type="To be opened",
+            value="n/a",
         )
+        synthetic.mark_synthetic()
+        synthetic._assigned.update({"owner", "type", "value"})
+        scoped.append(synthetic)
     return scoped
 
 
-def _format_conflict_value(acc: dict[str, Any]) -> str:
-    chosen = format_money(acc.get("value"))
-    as_of = acc.get("as_of")
-    src = acc.get("value_source") or "draft"
-    approx = "approx., " if acc.get("approximate") else ""
-    date_bit = f" @ {as_of}" if as_of else ""
+def _format_conflict_value(account: Account) -> str:
+    chosen = format_money(account.value)
+    date_bit = f" @ {account.as_of}" if account.as_of else ""
+    approx = "approx., " if account.approximate else ""
+    src = account.value_source or "draft"
     primary = f"{chosen} ({approx}{src}{date_bit})".replace("  ", " ")
 
-    alts = acc.get("value_alternates") or []
     other = next(
-        (a for a in alts if a.get("source_role") != acc.get("value_source")),
-        alts[0] if alts else None,
+        (alt for alt in account.value_alternates if alt.source_role != account.value_source),
+        account.value_alternates[0] if account.value_alternates else None,
     )
     if other:
-        other_val = format_money(other.get("value"))
-        other_as = other.get("as_of")
-        other_src = other.get("source_role") or "other"
-        other_date = f" @ {other_as}" if other_as else ""
-        primary = f"{primary} [REVIEW: {other_src} {other_val}{other_date}]"
-    elif acc.get("value_conflict"):
+        other_date = f" @ {other.as_of}" if other.as_of else ""
+        other_src = other.source_role or "other"
+        primary = f"{primary} [REVIEW: {other_src} {format_money(other.value)}{other_date}]"
+    elif account.value_conflict:
         primary = f"{primary} [REVIEW: value conflict]"
-    elif acc.get("approximate"):
+    elif account.approximate:
         primary = f"{primary} [REVIEW: approximate figure]"
     return primary
 
 
-def render_holdings_table(facts: dict[str, Any]) -> str:
+def render_holdings_table(facts: ReconciledFacts) -> str:
     accounts = resolve_scoped_accounts(facts)
     lines = [
         "| Account | Owner | Type | Value |",
@@ -136,30 +105,28 @@ def render_holdings_table(facts: dict[str, Any]) -> str:
         lines.append("| [REVIEW: accounts] | — | — | — |")
         return "\n".join(lines)
 
-    for acc in accounts:
-        aid = acc.get("account_id") or "—"
-        owner = acc.get("owner") or "—"
-        typ = acc.get("type") or "—"
-        if acc.get("synthetic"):
-            value = str(acc.get("value") or "n/a")
-        elif acc.get("value") is None:
+    for account in accounts:
+        aid = account.account_id or "—"
+        owner = account.owner or "—"
+        typ = account.type or "—"
+        if account.synthetic:
+            value = str(account.value or "n/a")
+        elif account.value is None:
             value = f"[REVIEW: {aid} value]"
-        elif acc.get("value_conflict") or acc.get("approximate") or acc.get(
-            "value_alternates"
-        ):
-            value = _format_conflict_value(acc)
+        elif account.value_conflict or account.approximate or account.value_alternates:
+            value = _format_conflict_value(account)
         else:
-            value = format_money(acc.get("value"))
+            value = format_money(account.value)
         lines.append(f"| {aid} | {owner} | {typ} | {value} |")
     return "\n".join(lines)
 
 
-def render_fees(facts: dict[str, Any]) -> str:
+def render_fees(facts: ReconciledFacts) -> str:
     lines = [
         "| Charge | Rate |",
         "|--------|------|",
     ]
-    initial = _fact_value(facts, "initial_charge")
+    initial = facts.fact_value("initial_charge")
     if initial not in (None, ""):
         text = str(initial).strip()
         if text and text not in {"0", "0%", "0.0", "0.0%"}:
@@ -169,33 +136,29 @@ def render_fees(facts: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def render_cgt_statement(_facts: dict[str, Any]) -> str:
+def render_cgt_statement(_facts: ReconciledFacts) -> str:
     return (
         "The disposal may create a capital gains tax liability, which will be "
         "assessed against the annual exempt amount. [REVIEW: CGT figure]"
     )
 
 
-def facts_context_block(facts: dict[str, Any]) -> str:
+def facts_context_block(facts: ReconciledFacts) -> str:
     """Compact CASE FACTS block for narrative LLM prompts."""
     lines = ["CASE FACTS (authoritative draft — do not invent beyond this):"]
-    lines.append(f"- selling: {facts.get('selling')}")
-    for field, entry in sorted((facts.get("facts") or {}).items()):
-        if not isinstance(entry, dict):
-            continue
-        flag = " [CONFLICT]" if entry.get("conflict") else ""
+    lines.append(f"- selling: {facts.selling}")
+    for name, entry in sorted(facts.facts.items()):
+        flag = " [CONFLICT]" if entry.conflict else ""
+        lines.append(f"- {name}: {entry.value!r} (source={entry.source}){flag}")
+    for account in facts.accounts:
+        flag = " [CONFLICT]" if account.value_conflict else ""
         lines.append(
-            f"- {field}: {entry.get('value')!r} (source={entry.get('source')}){flag}"
+            f"- account {account.account_id}: type={account.type!r} "
+            f"owner={account.owner!r} value={account.value!r} "
+            f"as_of={account.as_of!r}{flag}"
         )
-    for acc in facts.get("accounts") or []:
-        flag = " [CONFLICT]" if acc.get("value_conflict") else ""
-        lines.append(
-            f"- account {acc.get('account_id')}: type={acc.get('type')!r} "
-            f"owner={acc.get('owner')!r} value={acc.get('value')!r} "
-            f"as_of={acc.get('as_of')!r}{flag}"
-        )
-    if facts.get("conflicts"):
+    if facts.conflicts:
         lines.append("Conflicts:")
-        for c in facts["conflicts"]:
-            lines.append(f"- {c.get('field')}: {c.get('details')}")
+        for conflict in facts.conflicts:
+            lines.append(f"- {conflict.field}: {conflict.details}")
     return "\n".join(lines)

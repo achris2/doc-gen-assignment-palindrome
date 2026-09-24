@@ -1,18 +1,23 @@
 """Extract: typed sources → provenance observations (deterministic + LLM)."""
 
 import json
-import re
 from datetime import date
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from openai import OpenAI
 
-from agent_pipeline.reconcile import MONEY_KINDS
+from agent_pipeline.llm import JsonChat
+from agent_pipeline.schema import (
+    MONEY_KINDS,
+    DbAccount,
+    KnownAccount,
+    MeetingExtract,
+    Observation,
+    SourceRole,
+    TypedSource,
+)
 
-SourceRole = Literal["request", "meeting", "db", "unknown"]
-
-# Canonical request labels → fact field names
 _REQUEST_FIELD_MAP: dict[str, str] = {
     "accounts covered": "accounts_covered",
     "investment amount": "investment_amount",
@@ -100,25 +105,18 @@ def observation(
     quote: str | None = None,
     approximate: bool | None = None,
     kind: str | None = None,
-) -> dict[str, Any]:
-    """Build one evidence observation."""
-    obs: dict[str, Any] = {
-        "field": field,
-        "value": value,
-        "source_role": source_role,
-        "source_file": source_file,
-    }
-    if as_of is not None:
-        obs["as_of"] = as_of
-    if account_id is not None:
-        obs["account_id"] = account_id
-    if quote is not None:
-        obs["quote"] = quote
-    if approximate is not None:
-        obs["approximate"] = approximate
-    if kind is not None:
-        obs["kind"] = kind
-    return obs
+) -> Observation:
+    return Observation(
+        field=field,
+        value=value,
+        source_role=source_role,
+        source_file=source_file,
+        as_of=as_of,
+        account_id=account_id,
+        quote=quote,
+        approximate=approximate,
+        kind=kind,
+    )
 
 
 def parse_request_kv_lines(text: str) -> dict[str, str]:
@@ -141,7 +139,6 @@ def _coerce_selling(raw: str) -> bool | None:
         return True
     if cleaned in {"no", "n", "false"}:
         return False
-    # e.g. "Yes (partial rebalance of the Holloway joint GIA)"
     if cleaned.startswith("yes"):
         return True
     if cleaned.startswith("no"):
@@ -155,7 +152,7 @@ def extract_request_observations(
     *,
     openai_client: OpenAI | None = None,
     model: str | None = None,
-) -> list[dict[str, Any]]:
+) -> list[Observation]:
     """Deterministic request extract; LLM fallback if no known keys found."""
     pairs = parse_request_kv_lines(text)
     mapped: dict[str, str] = {}
@@ -173,7 +170,7 @@ def extract_request_observations(
             model=model,
         )
 
-    out: list[dict[str, Any]] = []
+    out: list[Observation] = []
     for field, value in mapped.items():
         if field == "selling":
             coerced = _coerce_selling(value)
@@ -201,9 +198,9 @@ def extract_request_observations(
     return out
 
 
-def parse_db_accounts(data: dict[str, Any]) -> list[dict[str, Any]]:
+def parse_db_accounts(data: dict[str, Any]) -> list[DbAccount]:
     """Flatten holders → unique accounts by account_id (first wins). Preserve nulls."""
-    by_id: dict[str, dict[str, Any]] = {}
+    by_id: dict[str, DbAccount] = {}
     holders = data.get("holders") or {}
     if not isinstance(holders, dict):
         return []
@@ -214,11 +211,28 @@ def parse_db_accounts(data: dict[str, Any]) -> list[dict[str, Any]]:
         for account in holder.get("accounts") or []:
             if not isinstance(account, dict):
                 continue
-            account_id = account.get("account_id")
-            if not account_id or account_id in by_id:
+            parsed = DbAccount.from_dict(account)
+            if parsed is None or parsed.account_id in by_id:
                 continue
-            by_id[str(account_id)] = dict(account)
+            by_id[parsed.account_id] = parsed
     return list(by_id.values())
+
+
+def _load_db_payload(data: dict[str, Any] | str | Path) -> tuple[dict[str, Any] | None, str]:
+    if isinstance(data, Path):
+        try:
+            parsed = json.loads(data.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            parsed = None
+        text = data.read_text(encoding="utf-8") if data.exists() else ""
+        return parsed if isinstance(parsed, dict) else None, text
+    if isinstance(data, str):
+        try:
+            parsed = json.loads(data)
+        except json.JSONDecodeError:
+            parsed = None
+        return parsed if isinstance(parsed, dict) else None, data
+    return data, json.dumps(data)
 
 
 def extract_db_observations(
@@ -227,27 +241,13 @@ def extract_db_observations(
     *,
     openai_client: OpenAI | None = None,
     model: str | None = None,
-) -> list[dict[str, Any]]:
+) -> list[Observation]:
     """Deterministic DB extract; LLM fallback if holders schema missing."""
-    parsed: dict[str, Any] | None
+    parsed, text = _load_db_payload(data)
     if isinstance(data, Path):
-        try:
-            parsed = json.loads(data.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            parsed = None
         source_file = data.name
-    elif isinstance(data, str):
-        try:
-            parsed = json.loads(data)
-        except json.JSONDecodeError:
-            parsed = None
-    else:
-        parsed = data
 
     if not isinstance(parsed, dict) or "holders" not in parsed:
-        text = data if isinstance(data, str) else json.dumps(parsed or {})
-        if isinstance(data, Path):
-            text = data.read_text(encoding="utf-8") if data.exists() else ""
         return _llm_structured_fallback(
             text,
             source_file=source_file,
@@ -257,7 +257,7 @@ def extract_db_observations(
         )
 
     snapshot_date = parsed.get("snapshot_date")
-    out: list[dict[str, Any]] = []
+    out: list[Observation] = []
     if snapshot_date:
         out.append(
             observation(
@@ -270,33 +270,34 @@ def extract_db_observations(
         )
 
     for account in parse_db_accounts(parsed):
-        account_id = str(account["account_id"])
-        as_of = account.get("valuation_date")
-        as_of_str = str(as_of) if as_of else (
-            str(snapshot_date) if snapshot_date else None
-        )
-
-        for meta_field in ("type", "owner", "platform", "status", "currency"):
-            if meta_field in account and account[meta_field] is not None:
+        as_of = account.valuation_date
+        as_of_str = str(as_of) if as_of else (str(snapshot_date) if snapshot_date else None)
+        meta = {
+            "type": account.type,
+            "owner": account.owner,
+            "platform": account.platform,
+            "status": account.status,
+            "currency": account.currency,
+        }
+        for meta_field, meta_value in meta.items():
+            if meta_value is not None:
                 out.append(
                     observation(
                         field=f"account_{meta_field}",
-                        value=account[meta_field],
+                        value=meta_value,
                         source_role="db",
                         source_file=source_file,
-                        account_id=account_id,
+                        account_id=account.account_id,
                         as_of=as_of_str,
                     )
                 )
-
-        # Always emit account_value, including explicit null → review later
         out.append(
             observation(
                 field="account_value",
-                value=account.get("value"),
+                value=account.value,
                 source_role="db",
                 source_file=source_file,
-                account_id=account_id,
+                account_id=account.account_id,
                 as_of=as_of_str,
                 kind="account_balance",
             )
@@ -304,96 +305,47 @@ def extract_db_observations(
     return out
 
 
-def _parse_json_object(raw: str) -> dict[str, Any]:
-    raw = raw.strip()
-    if raw.startswith("```"):
-        raw = re.sub(r"^```(?:json)?\s*", "", raw)
-        raw = re.sub(r"\s*```$", "", raw)
-    return json.loads(raw)
-
-
-def _llm_json(
-    openai_client: OpenAI,
-    model: str,
-    prompt: str,
-    body: str,
-    *,
-    temperature: float | None = None,
-) -> dict[str, Any] | None:
-    try:
-        kwargs: dict[str, Any] = {
-            "model": model,
-            "response_format": {"type": "json_object"},
-            "messages": [{"role": "user", "content": f"{prompt}\n\n---\n\n{body}"}],
-        }
-        if temperature is not None:
-            kwargs["temperature"] = temperature
-        response = openai_client.chat.completions.create(**kwargs)
-        raw = response.choices[0].message.content or "{}"
-        return _parse_json_object(raw)
-    except Exception:
-        return None
-
-
-def _observations_from_llm_payload(
-    payload: dict[str, Any],
+def _observations_from_extract(
+    extracted: MeetingExtract,
     *,
     source_role: SourceRole,
     source_file: str,
     default_as_of: str | None = None,
     known_account_ids: set[str] | None = None,
-) -> list[dict[str, Any]]:
-    allowed = known_account_ids
-    out: list[dict[str, Any]] = []
-    for item in payload.get("observations") or []:
-        if not isinstance(item, dict):
-            continue
-        field = item.get("field")
-        if not field:
-            continue
-        value = item.get("value")
-        if field == "selling" and isinstance(value, str):
+) -> list[Observation]:
+    out: list[Observation] = []
+    for item in extracted.observations:
+        value = item.value
+        if item.field == "selling" and isinstance(value, str):
             coerced = _coerce_selling(value)
             if coerced is None:
                 continue
             value = coerced
-        as_of = item.get("as_of") or default_as_of
-        account_id = item.get("account_id")
-        if account_id is not None:
-            account_id = str(account_id)
-            if allowed is not None and account_id not in allowed:
-                account_id = None
-        quote = item.get("quote")
-        approximate = item.get("approximate")
-        kind = item.get("kind")
-        if kind not in MONEY_KINDS:
-            kind = None
+        as_of = item.as_of or default_as_of
+        account_id = item.account_id
+        if account_id is not None and known_account_ids is not None and account_id not in known_account_ids:
+            account_id = None
+        kind = item.kind if item.kind in MONEY_KINDS else None
         out.append(
             observation(
-                field=str(field),
+                field=item.field,
                 value=value,
                 source_role=source_role,
                 source_file=source_file,
-                as_of=str(as_of) if as_of else None,
+                as_of=as_of,
                 account_id=account_id,
-                quote=str(quote) if quote else None,
-                approximate=bool(approximate) if approximate is not None else None,
+                quote=item.quote,
+                approximate=item.approximate,
                 kind=kind,
             )
         )
     return out
 
 
-def _format_known_accounts(accounts: list[dict[str, Any]]) -> str:
+def _format_known_accounts(accounts: list[KnownAccount]) -> str:
     if not accounts:
         return "(none — leave account_id null)"
-    lines = []
-    for acc in accounts:
-        lines.append(
-            f"- {acc.get('account_id')}: type={acc.get('type')!r}, "
-            f"platform={acc.get('platform')!r}, owner={acc.get('owner')!r}"
-        )
-    return "\n".join(lines)
+    return "\n".join(account.line() for account in accounts)
 
 
 def extract_meeting_observations(
@@ -402,24 +354,21 @@ def extract_meeting_observations(
     *,
     openai_client: OpenAI,
     model: str,
-    known_accounts: list[dict[str, Any]] | None = None,
-) -> list[dict[str, Any]]:
+    known_accounts: list[KnownAccount] | None = None,
+) -> list[Observation]:
     """One structured LLM extraction over meeting notes."""
     accounts = known_accounts or []
-    known_ids = {str(a["account_id"]) for a in accounts if a.get("account_id")}
-    prompt = _MEETING_EXTRACT_PROMPT.format(
-        known_accounts=_format_known_accounts(accounts)
-    )
-    payload = _llm_json(openai_client, model, prompt, text, temperature=0)
+    known_ids = {account.account_id for account in accounts}
+    prompt = _MEETING_EXTRACT_PROMPT.format(known_accounts=_format_known_accounts(accounts))
+    payload = JsonChat(openai_client, model).complete(f"{prompt}\n\n---\n\n{text}", temperature=0)
     if not payload:
         return []
-    meeting_date = payload.get("meeting_date")
-    default_as_of = str(meeting_date) if meeting_date else None
-    return _observations_from_llm_payload(
-        payload,
+    extracted = MeetingExtract.from_payload(payload)
+    return _observations_from_extract(
+        extracted,
         source_role="meeting",
         source_file=source_file,
-        default_as_of=default_as_of,
+        default_as_of=extracted.meeting_date,
         known_account_ids=known_ids or None,
     )
 
@@ -431,66 +380,66 @@ def _llm_structured_fallback(
     source_role: SourceRole,
     openai_client: OpenAI | None,
     model: str | None,
-) -> list[dict[str, Any]]:
+) -> list[Observation]:
     if openai_client is None or not model:
         return []
-    payload = _llm_json(openai_client, model, _STRUCTURED_FALLBACK_PROMPT, text)
+    payload = JsonChat(openai_client, model).complete(
+        f"{_STRUCTURED_FALLBACK_PROMPT}\n\n---\n\n{text}"
+    )
     if not payload:
         return []
-    return _observations_from_llm_payload(
-        payload, source_role=source_role, source_file=source_file
+    return _observations_from_extract(
+        MeetingExtract.from_payload(payload),
+        source_role=source_role,
+        source_file=source_file,
     )
 
 
-def _known_accounts_from_db_obs(observations: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Build known-account list from db observations already extracted."""
-    by_id: dict[str, dict[str, Any]] = {}
+def _known_accounts_from_db_obs(observations: list[Observation]) -> list[KnownAccount]:
+    by_id: dict[str, KnownAccount] = {}
     for obs in observations:
-        if obs.get("source_role") != "db":
+        if obs.source_role != "db" or not obs.account_id:
             continue
-        aid = obs.get("account_id")
-        if not aid:
-            continue
-        aid = str(aid)
-        acc = by_id.setdefault(aid, {"account_id": aid})
-        field = obs.get("field") or ""
-        if field == "account_type":
-            acc["type"] = obs.get("value")
-        elif field == "account_platform":
-            acc["platform"] = obs.get("value")
-        elif field == "account_owner":
-            acc["owner"] = obs.get("value")
+        account = by_id.setdefault(obs.account_id, KnownAccount(account_id=obs.account_id))
+        if obs.field == "account_type":
+            account.type = obs.value
+        elif obs.field == "account_platform":
+            account.platform = obs.value
+        elif obs.field == "account_owner":
+            account.owner = obs.value
     return list(by_id.values())
 
 
 def extract_observations(
-    typed_sources: dict[str, dict[str, Any]],
+    typed_sources: dict[str, TypedSource | dict[str, Any]],
     *,
     openai_client: OpenAI | None = None,
     model: str | None = None,
-) -> list[dict[str, Any]]:
+) -> list[Observation]:
     """Extract all observations from typed retrieve sources (request/meeting/db)."""
-    observations: list[dict[str, Any]] = []
+    sources = {
+        role: TypedSource.from_mapping(role, src) for role, src in typed_sources.items()
+    }
+    observations: list[Observation] = []
 
-    if "request" in typed_sources:
-        src = typed_sources["request"]
+    if "request" in sources:
+        src = sources["request"]
         observations.extend(
             extract_request_observations(
-                src["text"],
-                src.get("name", "request"),
+                src.text,
+                src.name,
                 openai_client=openai_client,
                 model=model,
             )
         )
 
-    if "db" in typed_sources:
-        src = typed_sources["db"]
-        path = src.get("path")
-        if isinstance(path, Path) and path.suffix.lower() == ".json":
+    if "db" in sources:
+        src = sources["db"]
+        if src.path.suffix.lower() == ".json":
             observations.extend(
                 extract_db_observations(
-                    path,
-                    src.get("name", path.name),
+                    src.path,
+                    src.name,
                     openai_client=openai_client,
                     model=model,
                 )
@@ -498,23 +447,22 @@ def extract_observations(
         else:
             observations.extend(
                 extract_db_observations(
-                    src.get("text", ""),
-                    src.get("name", "db"),
+                    src.text,
+                    src.name,
                     openai_client=openai_client,
                     model=model,
                 )
             )
 
-    if "meeting" in typed_sources and openai_client is not None and model:
-        src = typed_sources["meeting"]
-        known = _known_accounts_from_db_obs(observations)
+    if "meeting" in sources and openai_client is not None and model:
+        src = sources["meeting"]
         observations.extend(
             extract_meeting_observations(
-                src["text"],
-                src.get("name", "meeting"),
+                src.text,
+                src.name,
                 openai_client=openai_client,
                 model=model,
-                known_accounts=known,
+                known_accounts=_known_accounts_from_db_obs(observations),
             )
         )
 

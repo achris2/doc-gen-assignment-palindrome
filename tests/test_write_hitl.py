@@ -8,81 +8,45 @@ from agent_pipeline.render import (
     render_holdings_table,
     render_scope,
 )
-from agent_pipeline.generate import ReportGenerator
+from agent_pipeline.schema import Observation, ReconciledFacts, SectionSpec
+
+
+def _obs(field, value, role, *, source_file, account_id=None, as_of=None):
+    return Observation(
+        field=field,
+        value=value,
+        source_role=role,
+        source_file=source_file,
+        account_id=account_id,
+        as_of=as_of,
+    )
 
 
 def _sample_facts():
     return reconcile_observations(
         [
-            {
-                "field": "selling",
-                "value": True,
-                "source_role": "request",
-                "source_file": "report_request.docx",
-            },
-            {
-                "field": "accounts_covered",
-                "value": "Holloway ISAs, joint GIA, and cash accounts",
-                "source_role": "request",
-                "source_file": "report_request.docx",
-            },
-            {
-                "field": "initial_charge",
-                "value": "0.5%",
-                "source_role": "request",
-                "source_file": "report_request.docx",
-            },
-            {
-                "field": "account_value",
-                "value": 40000,
-                "source_role": "db",
-                "source_file": "db.json",
-                "account_id": "H-GIA-J",
-                "as_of": "2026-03-15",
-            },
-            {
-                "field": "account_type",
-                "value": "GIA",
-                "source_role": "db",
-                "source_file": "db.json",
-                "account_id": "H-GIA-J",
-            },
-            {
-                "field": "account_owner",
-                "value": "Joint",
-                "source_role": "db",
-                "source_file": "db.json",
-                "account_id": "H-GIA-J",
-            },
-            {
-                "field": "account_value",
-                "value": 45000,
-                "source_role": "meeting",
-                "source_file": "meeting.docx",
-                "account_id": "H-GIA-J",
-                "as_of": "2026-05-14",
-            },
-            {
-                "field": "account_value",
-                "value": None,
-                "source_role": "db",
-                "source_file": "db.json",
-                "account_id": "H-CASH-JE",
-            },
-            {
-                "field": "account_type",
-                "value": "Cash Account",
-                "source_role": "db",
-                "source_file": "db.json",
-                "account_id": "H-CASH-JE",
-            },
-            {
-                "field": "account_owner",
-                "value": "Jean",
-                "source_role": "db",
-                "source_file": "db.json",
-                "account_id": "H-CASH-JE",
-            },
+            _obs("selling", True, "request", source_file="report_request.docx"),
+            _obs(
+                "accounts_covered",
+                "Holloway ISAs, joint GIA, and cash accounts",
+                "request",
+                source_file="report_request.docx",
+            ),
+            _obs("initial_charge", "0.5%", "request", source_file="report_request.docx"),
+            _obs("account_value", 40000, "db", source_file="db.json", account_id="H-GIA-J", as_of="2026-03-15"),
+            _obs("account_type", "GIA", "db", source_file="db.json", account_id="H-GIA-J"),
+            _obs("account_owner", "Joint", "db", source_file="db.json", account_id="H-GIA-J"),
+            _obs(
+                "account_value",
+                45000,
+                "meeting",
+                source_file="meeting.docx",
+                account_id="H-GIA-J",
+                as_of="2026-05-14",
+            ),
+            _obs("account_value", None, "db", source_file="db.json", account_id="H-CASH-JE"),
+            _obs("account_type", "Cash Account", "db", source_file="db.json", account_id="H-CASH-JE"),
+            _obs("account_owner", "Jean", "db", source_file="db.json", account_id="H-CASH-JE"),
         ]
     )
 
@@ -129,33 +93,33 @@ def test_hitl_footer_always_present() -> None:
     assert "[REVIEW: confirm ongoing charges after report issuance]" in out
 
 
-def test_tax_section_gated_by_selling() -> None:
-    class Dummy:
-        pass
+def _facts(selling: bool) -> ReconciledFacts:
+    return ReconciledFacts(
+        selling=selling,
+        conflicts=[],
+        review_items=[],
+        facts={},
+        accounts=[],
+        observation_count=0,
+    )
 
-    gen = ReportGenerator.__new__(ReportGenerator)
-    selling_yes = {"selling": True}
-    selling_no = {"selling": False}
-    tax = {
-        "use_if": "Include only when selling is true in reconciled facts.",
-        "title": "Tax Implications",
-    }
-    assert gen._section_applies(tax, selling_yes) is True
-    assert gen._section_applies(tax, selling_no) is False
-    assert gen._section_applies({"use_if": "always"}, selling_no) is True
+
+def test_tax_section_gated_by_selling() -> None:
+    tax = SectionSpec.from_dict(
+        {
+            "use_if": "Include only when selling is true in reconciled facts.",
+            "title": "Tax Implications",
+            "template": "",
+        }
+    )
+    always = SectionSpec.from_dict({"use_if": "always", "template": ""})
+    assert tax.applies(_facts(True)) is True
+    assert tax.applies(_facts(False)) is False
+    assert always.applies(_facts(False)) is True
 
 
 def test_human_review_empty_conflicts_message() -> None:
-    facts = reconcile_observations(
-        [
-            {
-                "field": "selling",
-                "value": False,
-                "source_role": "request",
-                "source_file": "r",
-            }
-        ]
-    )
+    facts = reconcile_observations([_obs("selling", False, "request", source_file="r")])
     text = render_human_review(facts)
     assert "No open conflicts." in text
     assert "[REVIEW: platform fee]" in text

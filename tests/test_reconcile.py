@@ -8,20 +8,18 @@ from agent_pipeline.reconcile import (
     validate_recommendation_items,
     values_materially_differ,
 )
+from agent_pipeline.schema import Observation, RecommendationDraft
 
 
 def _obs(field, value, role, *, as_of=None, account_id=None, source_file="x"):
-    out = {
-        "field": field,
-        "value": value,
-        "source_role": role,
-        "source_file": source_file,
-    }
-    if as_of is not None:
-        out["as_of"] = as_of
-    if account_id is not None:
-        out["account_id"] = account_id
-    return out
+    return Observation(
+        field=field,
+        value=value,
+        source_role=role,
+        source_file=source_file,
+        as_of=as_of,
+        account_id=account_id,
+    )
 
 
 def test_values_materially_differ_numeric() -> None:
@@ -36,13 +34,13 @@ def test_conflicting_dated_observations_create_conflict_and_pick_freshest() -> N
         _obs("account_value", 45000, "meeting", as_of="2026-05-14", account_id="H-GIA-J"),
     ]
     facts = reconcile_observations(observations)
-    assert len(facts["conflicts"]) == 1
-    assert facts["conflicts"][0]["field"] == "account_value:H-GIA-J"
-    acc = next(a for a in facts["accounts"] if a["account_id"] == "H-GIA-J")
-    assert acc["value"] == 45000
-    assert acc["value_source"] == "meeting"
-    assert acc["value_conflict"] is True
-    assert acc.get("needs_review") is True
+    assert len(facts.conflicts) == 1
+    assert facts.conflicts[0].field == "account_value:H-GIA-J"
+    acc = next(a for a in facts.accounts if a.account_id == "H-GIA-J")
+    assert acc.value == 45000
+    assert acc.value_source == "meeting"
+    assert acc.value_conflict is True
+    assert acc.needs_review is True
 
 
 def test_reversing_dates_reverses_selected_observation() -> None:
@@ -56,12 +54,12 @@ def test_reversing_dates_reverses_selected_observation() -> None:
         _obs("account_value", 45000, "meeting", as_of="2026-03-15", account_id="H-GIA-J"),
     ]
     backward = reconcile_observations(reversed_obs)
-    fwd = next(a for a in forward["accounts"] if a["account_id"] == "H-GIA-J")
-    bwd = next(a for a in backward["accounts"] if a["account_id"] == "H-GIA-J")
-    assert fwd["value"] == 45000
-    assert bwd["value"] == 40000
-    assert len(forward["conflicts"]) == 1
-    assert len(backward["conflicts"]) == 1
+    fwd = next(a for a in forward.accounts if a.account_id == "H-GIA-J")
+    bwd = next(a for a in backward.accounts if a.account_id == "H-GIA-J")
+    assert fwd.value == 45000
+    assert bwd.value == 40000
+    assert len(forward.conflicts) == 1
+    assert len(backward.conflicts) == 1
 
 
 def test_undated_disagreement_remains_review() -> None:
@@ -70,11 +68,10 @@ def test_undated_disagreement_remains_review() -> None:
         _obs("account_value", 45000, "meeting", account_id="H-GIA-J"),
     ]
     facts = reconcile_observations(observations)
-    assert len(facts["conflicts"]) == 1
-    assert any("unresolvable" in item or "conflict" in item for item in facts["review_items"])
-    # No defensible dated pick → value not forced from averaging
-    acc = next(a for a in facts["accounts"] if a["account_id"] == "H-GIA-J")
-    assert acc.get("value") is None or acc.get("needs_review") is True
+    assert len(facts.conflicts) == 1
+    assert any("unresolvable" in item or "conflict" in item for item in facts.review_items)
+    acc = next(a for a in facts.accounts if a.account_id == "H-GIA-J")
+    assert acc.value is None or acc.needs_review is True
 
 
 def test_never_averages_conflicting_values() -> None:
@@ -83,9 +80,9 @@ def test_never_averages_conflicting_values() -> None:
         _obs("account_value", 38000, "meeting", as_of="2026-05-16", account_id="H-GIA-JF"),
     ]
     facts = reconcile_observations(observations)
-    acc = next(a for a in facts["accounts"] if a["account_id"] == "H-GIA-JF")
-    assert acc["value"] in {30000, 38000}
-    assert acc["value"] != 34000
+    acc = next(a for a in facts.accounts if a.account_id == "H-GIA-JF")
+    assert acc.value in {30000, 38000}
+    assert acc.value != 34000
 
 
 def test_null_account_value_becomes_review_item() -> None:
@@ -94,10 +91,10 @@ def test_null_account_value_becomes_review_item() -> None:
         _obs("account_type", "Cash Account", "db", account_id="H-CASH-JE"),
     ]
     facts = reconcile_observations(observations)
-    assert any("H-CASH-JE" in item for item in facts["review_items"])
-    acc = next(a for a in facts["accounts"] if a["account_id"] == "H-CASH-JE")
-    assert acc["value"] is None
-    assert acc.get("needs_review") is True
+    assert any("H-CASH-JE" in item for item in facts.review_items)
+    acc = next(a for a in facts.accounts if a.account_id == "H-CASH-JE")
+    assert acc.value is None
+    assert acc.needs_review is True
 
 
 def test_request_authority_for_selling_and_fee_cgt_seeds() -> None:
@@ -107,19 +104,19 @@ def test_request_authority_for_selling_and_fee_cgt_seeds() -> None:
         _obs("circumstances", "Retired", "meeting"),
     ]
     facts = reconcile_observations(observations)
-    assert facts["selling"] is True
-    assert facts["facts"]["accounts_covered"]["source"] == "request"
-    assert facts["facts"]["circumstances"]["source"] == "meeting"
-    assert "[REVIEW: platform fee]" in facts["review_items"]
-    assert "[REVIEW: advice fee]" in facts["review_items"]
-    assert CGT_REVIEW_ITEM in facts["review_items"]
+    assert facts.selling is True
+    assert facts.facts["accounts_covered"].source == "request"
+    assert facts.facts["circumstances"].source == "meeting"
+    assert "[REVIEW: platform fee]" in facts.review_items
+    assert "[REVIEW: advice fee]" in facts.review_items
+    assert CGT_REVIEW_ITEM in facts.review_items
 
 
 def test_selling_false_skips_cgt_review_seed() -> None:
     facts = reconcile_observations([_obs("selling", False, "request")])
-    assert facts["selling"] is False
-    assert CGT_REVIEW_ITEM not in facts["review_items"]
-    assert "[REVIEW: platform fee]" in facts["review_items"]
+    assert facts.selling is False
+    assert CGT_REVIEW_ITEM not in facts.review_items
+    assert "[REVIEW: platform fee]" in facts.review_items
 
 
 def test_text_conflict_on_request_field_keeps_request_draft() -> None:
@@ -128,9 +125,9 @@ def test_text_conflict_on_request_field_keeps_request_draft() -> None:
         _obs("risk_profile", "5 (balanced)", "meeting"),
     ]
     facts = reconcile_observations(observations)
-    assert len(facts["conflicts"]) == 1
-    assert facts["facts"]["risk_profile"]["value"] == "4 (moderate)"
-    assert facts["facts"]["risk_profile"]["conflict"] is True
+    assert len(facts.conflicts) == 1
+    assert facts.facts["risk_profile"].value == "4 (moderate)"
+    assert facts.facts["risk_profile"].conflict is True
 
 
 def test_phantom_meeting_account_id_does_not_create_row() -> None:
@@ -153,13 +150,13 @@ def test_phantom_meeting_account_id_does_not_create_row() -> None:
         ),
     ]
     # Attach quotes like extract would
-    observations[-1]["quote"] = "about twenty thousand in the cash account"
-    observations[-2]["quote"] = "GIA looked nearer forty-five"
+    observations[-1].quote = "about twenty thousand in the cash account"
+    observations[-2].quote = "GIA looked nearer forty-five"
     facts = reconcile_observations(observations)
-    ids = {a["account_id"] for a in facts["accounts"]}
+    ids = {a.account_id for a in facts.accounts}
     assert "joint_GIA" not in ids
     assert "H-GIA-J" in ids
-    assert any("unmatched figure" in item for item in facts["review_items"])
+    assert any("unmatched figure" in item for item in facts.review_items)
 
 
 def test_transfer_is_not_stored_as_account_balance() -> None:
@@ -168,40 +165,42 @@ def test_transfer_is_not_stored_as_account_balance() -> None:
         _obs("account_value", 20000, "meeting", as_of="2026-05-12", account_id="H-CASH-01", source_file="meeting_notes.docx"),
         _obs("product", "David ISA", "request", source_file="report_request.docx"),
     ]
-    observations[1]["kind"] = "transfer_amount"
-    observations[1]["quote"] = "move £20,000 from the cash account"
+    observations[1].kind = "transfer_amount"
+    observations[1].quote = "move £20,000 from the cash account"
     facts = reconcile_observations(observations)
-    acc = next(a for a in facts["accounts"] if a["account_id"] == "H-CASH-01")
-    assert acc["value"] == 25000
+    acc = next(a for a in facts.accounts if a.account_id == "H-CASH-01")
+    assert acc.value == 25000
     case = build_case_document(
         facts, {"client_data_db.json": "db", "meeting_notes.docx": "meeting", "photo.png": "noise"}
     )
-    assert any(row["file"] == "photo.png" and row["status"] == "skipped" for row in case["sources"])
-    balance = next(f for f in case["facts"] if f["kind"] == "account_balance")
-    transfer = next(f for f in case["facts"] if f["kind"] == "transfer_amount")
-    assert balance["excerpt"] == "account_balance H-CASH-01 = 25000"
-    assert transfer["excerpt"] == "move £20,000 from the cash account"
-    assert transfer["conflict"] is False
-    action = next(a for a in case["actions"] if a["supports"] == transfer["id"])
-    assert action["id"].startswith("a-")
-    assert "kind" not in action
-    assert action["amount"] == 20000
+    assert any(row.file == "photo.png" and row.status == "skipped" for row in case.sources)
+    balance = next(f for f in case.facts if f.kind == "account_balance")
+    transfer = next(f for f in case.facts if f.kind == "transfer_amount")
+    assert balance.excerpt == "account_balance H-CASH-01 = 25000"
+    assert transfer.excerpt == "move £20,000 from the cash account"
+    assert transfer.conflict is False
+    action = next(a for a in case.actions if a.supports == transfer.id)
+    assert action.id.startswith("a-")
+    assert "kind" not in action.to_dict()
+    assert action.amount == 20000
     text, stored = validate_recommendation_items(
-        {"items": [{"action_id": action["id"], "text": "Invest £80,000 into the GIA."}]},
-        case["actions"],
+        RecommendationDraft.from_payload(
+            {"items": [{"action_id": action.id, "text": "Invest £80,000 into the GIA."}]}
+        ),
+        case.actions,
     )
     assert "[REVIEW:" in text
     assert stored == []
-    assert amounts_match_action("Invest £20,000 into David's ISA.", action["amount"])
-    assert not amounts_match_action("Invest £80,000 into the GIA.", action["amount"])
+    assert amounts_match_action("Invest £20,000 into David's ISA.", action.amount)
+    assert not amounts_match_action("Invest £80,000 into the GIA.", action.amount)
 
 
-def _transfer_case(observations: list[dict]) -> dict:
+def _transfer_case(observations: list[Observation]):
     for obs in observations:
-        if obs["field"] == "account_value" and obs["source_role"] == "meeting":
-            obs["kind"] = "transfer_amount"
-        if obs["field"] == "investment_amount":
-            obs["kind"] = "transfer_amount"
+        if obs.field == "account_value" and obs.source_role == "meeting":
+            obs.kind = "transfer_amount"
+        if obs.field == "investment_amount":
+            obs.kind = "transfer_amount"
     return build_case_document(reconcile_observations(observations), {})
 
 
@@ -214,13 +213,13 @@ def test_request_amount_corroborates_one_transfer() -> None:
             _obs("product", "Top up of existing Stocks & Shares ISA", "request"),
         ]
     )
-    assert len(case["actions"]) == 1
-    action = case["actions"][0]
-    transfer = next(f for f in case["facts"] if f["field"] == "account_value" and f["kind"] == "transfer_amount")
-    request = next(f for f in case["facts"] if f["field"] == "investment_amount")
-    assert action["supports"] == transfer["id"]
-    assert action["corroborated"] == request["id"]
-    assert action["amount"] == 20000
+    assert len(case.actions) == 1
+    action = case.actions[0]
+    transfer = next(f for f in case.facts if f.field == "account_value" and f.kind == "transfer_amount")
+    request = next(f for f in case.facts if f.field == "investment_amount")
+    assert action.supports == transfer.id
+    assert action.corroborated == request.id
+    assert action.amount == 20000
 
 
 def test_request_amount_collapses_only_the_matching_transfer() -> None:
@@ -234,11 +233,11 @@ def test_request_amount_collapses_only_the_matching_transfer() -> None:
             _obs("product", "Top up", "request"),
         ]
     )
-    assert len(case["actions"]) == 2
-    corroborated = [a for a in case["actions"] if a.get("corroborated")]
+    assert len(case.actions) == 2
+    corroborated = [a for a in case.actions if a.corroborated]
     assert len(corroborated) == 1
-    assert corroborated[0]["amount"] == 20000
-    assert any(a["amount"] == 50000 and "corroborated" not in a for a in case["actions"])
+    assert corroborated[0].amount == 20000
+    assert any(a.amount == 50000 and "corroborated" not in a.to_dict() for a in case.actions)
 
 
 def test_same_amount_on_two_transfers_stays_separate() -> None:
@@ -252,5 +251,5 @@ def test_same_amount_on_two_transfers_stays_separate() -> None:
             _obs("product", "Top up", "request"),
         ]
     )
-    assert len(case["actions"]) == 3
-    assert all("corroborated" not in action for action in case["actions"])
+    assert len(case.actions) == 3
+    assert all("corroborated" not in action.to_dict() for action in case.actions)

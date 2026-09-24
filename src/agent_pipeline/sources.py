@@ -2,16 +2,19 @@
 
 import json
 from pathlib import Path
-from typing import Any, Literal
 
 from openai import OpenAI
 
 from document_formatter.loading import read_file
 
-Role = Literal["request", "meeting", "db", "noise", "internal"]
+from agent_pipeline.llm import JsonChat
+from agent_pipeline.schema import FileClassification, FileRole, TypedSource
+
+Role = FileRole
 
 CORE_ROLES: frozenset[str] = frozenset({"request", "meeting", "db"})
 WRITER_ROLES: frozenset[str] = CORE_ROLES
+ALLOWED_ROLES: frozenset[str] = frozenset({"request", "meeting", "db", "noise", "internal"})
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
 PREVIEW_CHARS = 1200
@@ -43,16 +46,12 @@ Unknown or unclear → role "noise".
 """
 
 
-def _read_text_prefix(path: Path, limit: int) -> str:
+def _preview_text(path: Path) -> str:
     try:
         text = read_file(path)
     except Exception:
         return ""
-    return text[:limit]
-
-
-def _preview_text(path: Path) -> str:
-    return _read_text_prefix(path, PREVIEW_CHARS)
+    return text[:PREVIEW_CHARS]
 
 
 def classify_by_pattern(path: Path, text: str | None = None) -> Role | None:
@@ -90,37 +89,21 @@ def classify_unmatched_with_llm(
         return {}
 
     default: dict[str, Role] = {path.name: "noise" for path, _ in files}
-
     lines = []
     for path, preview in files:
         body = preview.strip() or "[unreadable or empty]"
         lines.append(f"### {path.name}\n{body}")
 
-    try:
-        response = openai_client.chat.completions.create(
-            model=model,
-            response_format={"type": "json_object"},
-            messages=[
-                {
-                    "role": "user",
-                    "content": _LLM_CLASSIFY_PROMPT + "\n\nFiles:\n" + "\n\n".join(lines),
-                }
-            ],
-        )
-        raw = response.choices[0].message.content or "{}"
-        payload = json.loads(raw)
-    except Exception:
+    payload = JsonChat(openai_client, model).complete(
+        _LLM_CLASSIFY_PROMPT + "\n\nFiles:\n" + "\n\n".join(lines)
+    )
+    if payload is None:
         return default
 
-    allowed: set[str] = {"request", "meeting", "db", "noise", "internal"}
     out = dict(default)
-    for item in payload.get("classifications") or []:
-        if not isinstance(item, dict):
-            continue
-        name = item.get("name")
-        role = item.get("role")
-        if name in out and role in allowed:
-            out[name] = role  # type: ignore[assignment]
+    for item in FileClassification.list_from_payload(payload):
+        if item.name in out and item.role in ALLOWED_ROLES:
+            out[item.name] = item.role  # type: ignore[assignment]
     return out
 
 
@@ -144,8 +127,7 @@ def classify_client_files(
             roles[path.name] = role
 
     if unmatched and openai_client is not None and model:
-        llm_roles = classify_unmatched_with_llm(unmatched, openai_client, model)
-        roles.update(llm_roles)
+        roles.update(classify_unmatched_with_llm(unmatched, openai_client, model))
     else:
         for path, _ in unmatched:
             roles[path.name] = "noise"
@@ -205,20 +187,15 @@ def load_typed_sources(
     openai_client: OpenAI | None = None,
     model: str | None = None,
     classifications: dict[str, Role] | None = None,
-) -> dict[str, dict[str, Any]]:
-    """Return typed sources: role → {path, name, text} for core roles only."""
+) -> dict[str, TypedSource]:
+    """Return typed sources: role → TypedSource for core roles only."""
     roles = classifications or classify_client_files(
         client_dir, openai_client=openai_client, model=model
     )
-    typed: dict[str, dict[str, Any]] = {}
+    typed: dict[str, TypedSource] = {}
     for name, role in roles.items():
         if role not in CORE_ROLES:
             continue
         path = client_dir / name
-        typed[role] = {
-            "path": path,
-            "name": name,
-            "text": read_file(path),
-            "role": role,
-        }
+        typed[role] = TypedSource(path=path, name=name, text=read_file(path), role=role)
     return typed
