@@ -1,6 +1,6 @@
 {
   "document_title": "Investment Advice Report",
-"global_instructions": "You are writing one placeholder of a financial advice report addressed to the client. 1. Clear, professional, British English, first person ('we'). 2. Output ONLY the placeholder content: no headings, no restating the surrounding template. 3. Never invent monetary amounts, percentages, or tax figures. If a figure is not in the sources, write [REVIEW: <what is missing>]. 4. If sources disagree on a figure, do not average them [REVIEW: <conflict description>].",
+  "global_instructions": "You are writing one placeholder of a financial advice report addressed to the client. 1. Clear, professional, British English, first person ('we'). 2. Output ONLY the placeholder content: no headings, no restating the surrounding template. 3. Never invent monetary amounts, percentages, or tax figures. If a figure is not in the sources, write [REVIEW: <what is missing>]. 4. If sources disagree on a figure, do not average them [REVIEW: <conflict description>].",
   "sections": [
     {
       "id": "introduction",
@@ -9,6 +9,7 @@
       "template": "Further to our recent discussions, we are writing to set out our advice in relation to <<scope>>. This advice is based on the information currently available to us.\n\nThis firm is authorised and regulated by the Financial Conduct Authority.",
       "placeholders": {
         "scope": {
+          "source": "render",
           "prompt": "Markdown bulleted list of which accounts this report covers, as a short noun phrase only. No full sentences."
         }
       }
@@ -20,9 +21,11 @@
       "template": "<<summary>>\n\nThe accounts covered by this report are as follows:\n\n<<holdings_table>>",
       "placeholders": {
         "summary": {
+          "source": "llm",
           "prompt": "1. Extract client's circumstances and objectives. 2. Provide a brief Markdown bulleted list of circumstances and objectives. 3. Do not include transaction amounts, sales, top-ups, or tax figures."
         },
         "holdings_table": {
+          "source": "render",
           "prompt": "Markdown table with columns Account | Owner | Type | Value for accounts in scope. One row per account, do not invent values. If a value is missing, use [REVIEW: <what is missing>]."
         }
       }
@@ -34,6 +37,7 @@
       "template": "We recommend the following:\n\n<<recommendation>>",
       "placeholders": {
         "recommendation": {
+          "source": "llm",
           "prompt": "1. Extract the proposed recommendations alongisde the rationale. 2. State what we recommend and why, using only amounts and actions evidenced in the sources. Do not invent fees or tax figures. If an amount is unclear or sources conflict, use [REVIEW: …].3. Generate a markdown bulleted list of the recommendations and rationale."
         }
       }
@@ -41,10 +45,15 @@
     {
       "id": "tax_implications",
       "title": "Tax Implications",
-      "use_if": "Include only when the report request says existing investments are being sold (Selling existing investments? Yes).",
+      "use_if": {
+        "fact": "selling",
+        "equals": true,
+        "description": "Include only when selling existing investments is true."
+      },
       "template": "<<cgt_statement>>",
       "placeholders": {
         "cgt_statement": {
+          "source": "render",
           "prompt": "State that the disposal may create a capital gains tax liability, assessed against the annual exempt amount. Do not estimate any monetary figure. End with [REVIEW: CGT figure]."
         }
       }
@@ -56,6 +65,7 @@
       "template": "<<fees>>",
       "placeholders": {
         "fees": {
+          "source": "render",
           "prompt": "List the platform charge and ongoing advice charge as a short Markdown table with columns Charge | Rate. Always put [REVIEW: platform fee] and [REVIEW: advice fee] in the Rate column for those rows. Never calculate, or invent percentages. Add an Initial charge row only if an initial charge is explicitly sourced, and never list it as ongoing."
         }
       }

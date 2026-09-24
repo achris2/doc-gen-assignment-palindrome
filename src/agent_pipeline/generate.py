@@ -30,6 +30,7 @@ from agent_pipeline.render import (
 from agent_pipeline.sources import classify_client_files, load_typed_sources
 
 # Placeholders filled from reconciled facts (no LLM).
+# Prefer placeholder "source": "render" | "llm" in config; fall back to this set.
 _DETERMINISTIC_SLOTS = {
     "scope": render_scope,
     "holdings_table": render_holdings_table,
@@ -71,10 +72,23 @@ class ReportGenerator:
         rule = section.get("use_if", "always")
         if rule == "always":
             return True
-        # Tax / selling gate is deterministic from reconciled facts
-        if "sold" in rule.lower() or "selling" in rule.lower():
+        if isinstance(rule, dict):
+            fact_name = rule.get("fact", "selling")
+            equals = rule.get("equals", True)
+            actual = facts.get(fact_name)
+            return bool(actual) == bool(equals)
+        # Legacy plain-language: Tax / selling gate
+        if "sold" in str(rule).lower() or "selling" in str(rule).lower():
             return bool(facts.get("selling"))
-        return bool(facts.get("selling"))
+        raise ValueError(f"Unknown use_if rule: {rule!r}")
+
+    def _placeholder_is_render(self, name: str, spec: dict) -> bool:
+        source = spec.get("source")
+        if source == "render":
+            return True
+        if source == "llm":
+            return False
+        return name in _DETERMINISTIC_SLOTS
 
     def _build_section(
         self,
@@ -85,8 +99,11 @@ class ReportGenerator:
     ) -> str:
         content = section["template"]
         for name, spec in section.get("placeholders", {}).items():
-            if name in _DETERMINISTIC_SLOTS:
-                value = _DETERMINISTIC_SLOTS[name](facts)
+            if self._placeholder_is_render(name, spec):
+                renderer = _DETERMINISTIC_SLOTS.get(name)
+                if renderer is None:
+                    raise ValueError(f"No render function for placeholder {name!r}")
+                value = renderer(facts)
             else:
                 value = self._ask(
                     f"{instructions}\n\n{spec['prompt']}",
@@ -135,7 +152,10 @@ def generate_client_report(
         client_dir, openai_client=openai_client, model=model
     )
     typed = load_typed_sources(
-        client_dir, openai_client=openai_client, model=model
+        client_dir,
+        openai_client=openai_client,
+        model=model,
+        classifications=classifications,
     )
     observations = extract_observations(
         typed, openai_client=openai_client, model=model

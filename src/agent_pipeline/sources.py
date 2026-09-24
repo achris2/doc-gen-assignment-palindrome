@@ -1,7 +1,5 @@
 """Retrieve: classify client file-dump roles — minimal deterministic checks + LLM fallback."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any, Literal
@@ -61,7 +59,7 @@ def classify_by_pattern(path: Path, text: str | None = None) -> Role | None:
     """Deterministic zero-ambiguity checks only; None → route to LLM.
 
     Rules:
-    - image extensions → noise
+    - image extensions → considered noise for v1 pipeline
     - JSON with top-level "holders" → db
 
     ``text`` is accepted for call-site compatibility but ignored.
@@ -206,13 +204,14 @@ def load_typed_sources(
     *,
     openai_client: OpenAI | None = None,
     model: str | None = None,
+    classifications: dict[str, Role] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Return typed sources: role → {path, name, text} for core roles only."""
-    classifications = classify_client_files(
+    roles = classifications or classify_client_files(
         client_dir, openai_client=openai_client, model=model
     )
     typed: dict[str, dict[str, Any]] = {}
-    for name, role in classifications.items():
+    for name, role in roles.items():
         if role not in CORE_ROLES:
             continue
         path = client_dir / name
