@@ -22,7 +22,8 @@
       "placeholders": {
         "summary": {
           "source": "llm",
-          "prompt": "Role: Write the Background & Objectives prose for an advice report.\nInputs: Use CASE FACTS (circumstances, objectives, risk_profile, ownership). Do not re-extract or invent.\nRules:\n1. High-level summary of circumstances and objectives only.\n2. No transaction amounts, top-ups, sale proceeds, tax figures, or £ amounts.\n3. Leave out irrelevant asides unrelated to advice.\n4. Handle sensitive life events (e.g. bereavement, business sale) with care when present in facts — do not sensationalise.\nOutput format: Brief Markdown bullets (circumstances then objectives). No table."
+          "facts": ["circumstances", "objectives", "risk_profile", "ownership"],
+          "prompt": "Role: Write the Background & Objectives prose for an advice report.\nInputs: Use only the CASE FACTS listed above. Do not re-extract or invent.\nRules:\n1. High-level summary of circumstances and objectives only.\n2. No transaction amounts, top-ups, sale proceeds, tax figures, or £ amounts.\n3. Leave out irrelevant asides unrelated to advice.\n4. Handle sensitive life events (e.g. bereavement, business sale) with care when present in facts — do not sensationalise.\nOutput format: Brief Markdown bullets (circumstances then objectives). No table."
         },
         "holdings_table": {
           "source": "render",
@@ -38,7 +39,8 @@
       "placeholders": {
         "recommendation": {
           "source": "llm",
-          "prompt": "Role: Write the Recommendations section.\nInputs: Use CASE FACTS (recommendation_summary, investment_amount, source_of_funds, selling, product, initial_charge, accounts). Do not invent amounts.\nRules:\n1. One Markdown bullet per recommended action.\n2. Each action must include its amount from CASE FACTS, or [REVIEW: <action> amount] if missing.\n3. Do not rehash Background circumstances/objectives.\n4. No promotional or growth claims; no invented fees or tax figures.\n5. If selling is true, include the disposal action.\n6. Mention the initial charge only if present in CASE FACTS.\nOutput format: Markdown bulleted list only."
+          "input": "actions",
+          "prompt": "Role: Turn each RECOMMENDATION ACTION into one sentence.\nRules:\n1. One item per action id supplied. Do not add, drop, or merge actions.\n2. Use that action's amount only. Do not decide which amount belongs to which action.\n3. Do not rehash Background circumstances/objectives.\n4. No promotional or growth claims; no invented fees or tax figures.\nOutput format: JSON items only, one per action."
         }
       }
     },

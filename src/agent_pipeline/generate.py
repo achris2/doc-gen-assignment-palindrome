@@ -25,6 +25,7 @@ from agent_pipeline.hitl import append_hitl_footer
 from agent_pipeline.reconcile import (
     build_case_document,
     reconcile_observations,
+    validate_recommendation_items,
     write_facts_json,
 )
 from agent_pipeline.render import (
@@ -58,7 +59,7 @@ class ReportGenerator:
         config: dict,
         *,
         facts: dict[str, Any],
-        narrative_context: str,
+        case: dict[str, Any],
     ) -> str:
         instructions = config.get("global_instructions", "")
         sections: list[dict[str, str]] = []
@@ -69,7 +70,7 @@ class ReportGenerator:
                 {
                     "title": section.get("title", ""),
                     "content": self._build_section(
-                        section, facts, narrative_context, instructions
+                        section, facts, case, instructions
                     ),
                 }
             )
@@ -101,7 +102,7 @@ class ReportGenerator:
         self,
         section: dict,
         facts: dict[str, Any],
-        narrative_context: str,
+        case: dict[str, Any],
         instructions: str,
     ) -> str:
         content = section["template"]
@@ -111,38 +112,86 @@ class ReportGenerator:
                 if renderer is None:
                     raise ValueError(f"No render function for placeholder {name!r}")
                 value = renderer(facts)
+            elif spec.get("input") == "actions":
+                value = self._recommendation_items(spec, case, instructions)
             else:
-                value = self._ask(
-                    f"{instructions}\n\n{spec['prompt']}",
-                    narrative_context,
-                )
+                value = self._narrative_slot(name, spec, case, instructions)
             content = content.replace(f"<<{name}>>", value)
         return content
 
-    def _ask(self, instruction: str, context: str) -> str:
-        response = self._openai.chat.completions.create(
-            model=self._model,
-            messages=[
-                {"role": "user", "content": f"{context}\n\n---\n\n{instruction}"}
-            ],
+    def _recommendation_items(self, spec: dict, case: dict[str, Any], instructions: str) -> str:
+        payload = self._ask_json(
+            f"{instructions}\n\n{spec['prompt']}\n"
+            "Return JSON {\"items\": [{\"action_id\": \"...\", \"text\": \"...\"}]}. "
+            "One item for every action id above. Do not choose which amount belongs to which action.",
+            slot_context(case, spec),
         )
-        return response.choices[0].message.content.strip()
+        text, stored = validate_recommendation_items(payload or {}, case.get("actions") or [])
+        case.setdefault("sections", {})["recommendation"] = {"items": stored}
+        return text
+
+    def _narrative_slot(
+        self, name: str, spec: dict, case: dict[str, Any], instructions: str
+    ) -> str:
+        payload = self._ask_json(
+            f"{instructions}\n\n{spec['prompt']}\n"
+            'Return JSON {"text": "...", "fact_ids": ["f-..."]}.',
+            slot_context(case, spec),
+        )
+        if not payload or "text" not in payload:
+            case.setdefault("sections", {})[name] = {"fact_ids": []}
+            return f"[REVIEW: {name} uncited]"
+        fact_ids = [str(item) for item in payload.get("fact_ids") or []]
+        case.setdefault("sections", {})[name] = {"fact_ids": fact_ids}
+        return str(payload.get("text") or "").strip()
+
+    def _ask_json(self, instruction: str, context: str) -> dict[str, Any] | None:
+        try:
+            response = self._openai.chat.completions.create(
+                model=self._model,
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "user", "content": f"{context}\n\n---\n\n{instruction}"}
+                ],
+            )
+            raw = response.choices[0].message.content or "{}"
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else None
+        except Exception:
+            return None
+
+
+def slot_context(case: dict[str, Any], spec: dict[str, Any]) -> str:
+    """Facts or actions for one placeholder. No raw source documents."""
+    if spec.get("input") == "actions":
+        lines = ["RECOMMENDATION ACTIONS (already joined — do not reassign amounts):"]
+        for action in case.get("actions") or []:
+            lines.append(
+                f"- id={action.get('id')} amount={action.get('amount')!r} "
+                f"who={action.get('who')!r} product={action.get('product')!r} "
+                f"source_of_funds={action.get('source_of_funds')!r} "
+                f"supports={action.get('supports')!r}"
+            )
+        return "\n".join(lines)
+    wanted = spec.get("facts")
+    lines = ["CASE FACTS (use only these; cite their ids):"]
+    for fact in case.get("facts") or []:
+        if wanted and fact.get("field") not in wanted:
+            continue
+        lines.append(
+            f"- id={fact.get('id')} field={fact.get('field')} value={fact.get('value')!r} "
+            f"source_file={fact.get('source_file')!r} excerpt={fact.get('excerpt')!r}"
+        )
+    return "\n".join(lines)
 
 
 def build_narrative_context(
     facts: dict[str, Any],
-    typed_sources: dict[str, dict[str, Any]],
+    typed_sources: dict[str, dict[str, Any]] | None = None,
 ) -> str:
-    """CASE FACTS + request/meeting text only (never noise/internal/full dump)."""
-    parts = [facts_context_block(facts)]
-    for role in ("request", "meeting"):
-        src = typed_sources.get(role)
-        if not src:
-            continue
-        name = src.get("name", role)
-        text = src.get("text") or ""
-        parts.append(f"=== {role}: {name} ===\n{text}")
-    return "\n\n".join(parts)
+    """Legacy full block. Narrative slots use slot_context instead."""
+    del typed_sources
+    return facts_context_block(facts)
 
 
 def run_header(label: str, config_text: str, model: str) -> dict[str, Any]:
@@ -195,13 +244,11 @@ def generate_client_report(
     )
 
     client_out = output_dir / client_name
-    facts_path = write_facts_json(case, client_out / "case_facts.json")
-
-    narrative = build_narrative_context(facts, typed)
     generator = ReportGenerator(openai_client, model)
-    report = generator.generate(config, facts=facts, narrative_context=narrative)
+    report = generator.generate(config, facts=facts, case=case)
     report = append_hitl_footer(report, facts, classifications)
 
+    facts_path = write_facts_json(case, client_out / "case_facts.json")
     out_path = output_dir / f"{client_name}.md"
     output_dir.mkdir(parents=True, exist_ok=True)
     out_path.write_text(report, encoding="utf-8")

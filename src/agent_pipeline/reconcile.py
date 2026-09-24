@@ -41,6 +41,7 @@ MONEY_KINDS = frozenset(
         "contingent_proceeds",
     }
 )
+# Request fields that are amounts, and what those source numbers mean.
 _REQUEST_AMOUNT_KIND = {"investment_amount": "transfer_amount"}
 
 # Relative/absolute tolerance for numeric "materially different"
@@ -97,7 +98,8 @@ def money_kind(obs: dict[str, Any]) -> str | None:
         return str(kind)
     if obs.get("field") == "account_value":
         return "account_balance"
-    return _REQUEST_AMOUNT_KIND.get(str(obs.get("field") or ""))
+    mapped = _REQUEST_AMOUNT_KIND.get(str(obs.get("field") or ""))
+    return mapped
 
 
 def _group_key(obs: dict[str, Any]) -> tuple[str, str | None, str | None]:
@@ -197,13 +199,14 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
 
     conflicts: list[dict[str, Any]] = []
     facts: dict[str, Any] = {}
-    recorded: list[dict[str, Any]] = []
 
     def _ensure_account(account_id: str) -> dict[str, Any] | None:
         """Only touch accounts that already exist from db."""
         if account_id not in accounts:
             return None
         return accounts[account_id]
+
+    recorded: list[dict[str, Any]] = []
 
     for (field, account_id, kind), group in sorted(
         groups.items(), key=lambda x: (x[0][0], x[0][1] or "", x[0][2] or "")
@@ -294,6 +297,7 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
             "account_id": account_id,
             "conflict": has_conflict,
         }
+
         recorded.append(
             {
                 "field": field,
@@ -385,14 +389,19 @@ def reconcile_observations(observations: list[dict[str, Any]]) -> dict[str, Any]
     }
 
 
+def _slug(value: Any) -> str:
+    text = re.sub(r"[^a-z0-9]+", "-", str(value or "").lower()).strip("-")
+    return text or "unknown"
+
+
 def excerpt_for(obs: dict[str, Any], *, kind: str | None = None) -> str:
     """Prose sources keep the quote. Structured sources keep field and value."""
     quote = obs.get("quote")
     if quote:
         return str(quote)
+    label = kind or obs.get("field") or "field"
     account_id = obs.get("account_id")
-    label = kind or str(obs.get("field") or "field")
-    prefix = f"{label} {account_id}" if account_id else label
+    prefix = f"{label} {account_id}" if account_id else str(label)
     return f"{prefix} = {obs.get('value')}"
 
 
@@ -404,68 +413,40 @@ def fact_id_for(field: str, account_id: str | None, kind: str | None) -> str:
     return f"f-{field}"
 
 
-def sources_from_classifications(classifications: dict[str, str]) -> list[dict[str, str]]:
-    image = {".png", ".jpg", ".jpeg"}
+def evidence_rows(group: list[dict[str, Any]], kind: str | None) -> list[dict[str, Any]]:
     rows = []
-    for name, role in sorted(classifications.items()):
-        status = "skipped" if Path(name).suffix.lower() in image else "parsed"
-        rows.append({"file": name, "role": role, "status": status})
+    for obs in group:
+        rows.append(
+            {
+                "source_file": obs.get("source_file"),
+                "source_role": obs.get("source_role"),
+                "value": obs.get("value"),
+                "kind": money_kind(obs) or kind,
+                "excerpt": excerpt_for(obs, kind=money_kind(obs) or kind),
+            }
+        )
     return rows
 
 
-def build_case_document(
-    reconciled: dict[str, Any],
-    classifications: dict[str, str] | None = None,
-    *,
-    run: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """One case file: which inputs were read, and each fact with its evidence."""
-    case_facts = []
-    for item in reconciled.get("recorded") or []:
-        draft = item.get("draft") or {}
-        field = str(item.get("field") or "")
-        account_id = item.get("account_id")
-        kind = item.get("kind")
-        fact_id = fact_id_for(field, account_id, kind if field == "account_value" or kind else None)
-        if field != "account_value" and kind:
-            fact_id = f"f-{field}"
-        case_facts.append(
-            {
-                "id": fact_id,
-                "field": field,
-                "value": draft.get("value"),
-                "source_file": draft.get("source_file"),
-                "excerpt": excerpt_for(draft, kind=kind),
-                "conflict": bool(item.get("conflict")),
-                "kind": kind,
-                "account_id": account_id,
-                "evidence": [
-                    {
-                        "source_file": obs.get("source_file"),
-                        "source_role": obs.get("source_role"),
-                        "value": obs.get("value"),
-                        "kind": money_kind(obs),
-                        "excerpt": excerpt_for(obs, kind=money_kind(obs)),
-                    }
-                    for obs in item.get("group") or []
-                ],
-            }
-        )
+def case_fact_from_recorded(item: dict[str, Any]) -> dict[str, Any]:
+    draft = item["draft"]
+    kind = item.get("kind")
+    field = item["field"]
+    account_id = item.get("account_id")
+    fact_id = fact_id_for(field, account_id, kind if field == "account_value" or kind else None)
+    if field != "account_value" and kind:
+        fact_id = f"f-{field}"
     return {
-        "run": run or {},
-        "sources": sources_from_classifications(classifications or {}),
-        "facts": case_facts,
-        "actions": build_actions(case_facts, reconciled),
-        "selling": reconciled.get("selling"),
-        "conflicts": reconciled.get("conflicts") or [],
-        "review_items": reconciled.get("review_items") or [],
-        "accounts": reconciled.get("accounts") or [],
+        "id": fact_id,
+        "field": field,
+        "value": draft.get("value"),
+        "source_file": draft.get("source_file"),
+        "excerpt": excerpt_for(draft, kind=kind),
+        "conflict": bool(item.get("conflict")),
+        "kind": kind,
+        "account_id": account_id,
+        "evidence": evidence_rows(item.get("group") or [], kind),
     }
-
-
-def _slug(value: Any) -> str:
-    text = re.sub(r"[^a-z0-9]+", "-", str(value or "").lower()).strip("-")
-    return text or "unknown"
 
 
 def action_id_for(action_type: str, owner_or_product: str) -> str:
@@ -508,6 +489,94 @@ def build_actions(case_facts: list[dict[str, Any]], reconciled: dict[str, Any]) 
     if not actions and "f-investment_amount" in by_id:
         add(by_id["f-investment_amount"], "fund", str(product or owner or "client"))
     return actions
+
+
+def sources_from_classifications(classifications: dict[str, str]) -> list[dict[str, str]]:
+    image = {".png", ".jpg", ".jpeg"}
+    rows = []
+    for name, role in sorted(classifications.items()):
+        status = "skipped" if Path(name).suffix.lower() in image else "parsed"
+        rows.append({"file": name, "role": role, "status": status})
+    return rows
+
+
+def build_case_document(
+    reconciled: dict[str, Any],
+    classifications: dict[str, str] | None = None,
+    *,
+    run: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """One case file: sources, typed facts with evidence, and joined actions."""
+    case_facts = [
+        case_fact_from_recorded(item)
+        for item in reconciled.get("recorded") or []
+        if item.get("draft") is not None
+    ]
+    return {
+        "run": run or {},
+        "sources": sources_from_classifications(classifications or {}),
+        "facts": case_facts,
+        "actions": build_actions(case_facts, reconciled),
+        "sections": {},
+        "selling": reconciled.get("selling"),
+        "conflicts": reconciled.get("conflicts") or [],
+        "review_items": reconciled.get("review_items") or [],
+        "accounts": reconciled.get("accounts") or [],
+    }
+
+
+def pound_amounts(text: str) -> list[float]:
+    found = []
+    for match in re.findall(r"£\s*([\d,]+(?:\.\d+)?)", text or ""):
+        number = _to_number(match)
+        if number is not None:
+            found.append(number)
+    return found
+
+
+def amounts_match_action(text: str, amount: Any) -> bool:
+    """True when every £ figure in text is this action's amount. No £ is ok."""
+    found = pound_amounts(text)
+    if not found:
+        return True
+    target = _to_number(amount)
+    if target is None:
+        return False
+    return all(not values_materially_differ(number, target) for number in found)
+
+
+def validate_recommendation_items(
+    payload: dict[str, Any], actions: list[dict[str, Any]]
+) -> tuple[str, list[dict[str, str]]]:
+    """One item per action. Amounts are checked against that action only."""
+    by_id = {action["id"]: action for action in actions}
+    supplied = [item for item in payload.get("items") or [] if isinstance(item, dict)]
+    used: dict[str, dict[str, Any]] = {}
+    reviews: list[str] = []
+    for item in supplied:
+        action_id = str(item.get("action_id") or "")
+        if action_id not in by_id:
+            reviews.append(f"[REVIEW: {action_id or 'unknown'} uncited]")
+            continue
+        if action_id in used:
+            reviews.append(f"[REVIEW: {action_id} uncited]")
+            continue
+        text = str(item.get("text") or "").strip()
+        if not amounts_match_action(text, by_id[action_id].get("amount")):
+            reviews.append(f"[REVIEW: {action_id} uncited]")
+            continue
+        used[action_id] = {"action_id": action_id, "text": text}
+    lines: list[str] = []
+    stored: list[dict[str, str]] = []
+    for action in actions:
+        action_id = action["id"]
+        if action_id not in used:
+            reviews.append(f"[REVIEW: {action_id} uncited]")
+            lines.append(f"[REVIEW: {action_id} uncited]")
+            continue
+        lines.append(used[action_id]["text"])
+        stored.append(used[action_id])
+    return "\n".join(lines), stored
 
 
 def write_facts_json(facts: dict[str, Any], path: Path) -> Path:

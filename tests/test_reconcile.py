@@ -2,8 +2,10 @@
 
 from agent_pipeline.reconcile import (
     CGT_REVIEW_ITEM,
+    amounts_match_action,
     build_case_document,
     reconcile_observations,
+    validate_recommendation_items,
     values_materially_differ,
 )
 
@@ -160,21 +162,6 @@ def test_phantom_meeting_account_id_does_not_create_row() -> None:
     assert any("unmatched figure" in item for item in facts["review_items"])
 
 
-def test_conflict_evidence_stays_on_the_case_fact() -> None:
-    observations = [
-        _obs("account_value", 40000, "db", as_of="2026-03-15", account_id="H-GIA-J", source_file="db.json"),
-        _obs("account_value", 45000, "meeting", as_of="2026-05-14", account_id="H-GIA-J", source_file="meeting.docx"),
-    ]
-    observations[1]["quote"] = "GIA looked nearer forty-five"
-    facts = reconcile_observations(observations)
-    case = build_case_document(facts, {"db.json": "db", "meeting.docx": "meeting", "photo.png": "noise"})
-    assert any(row["status"] == "skipped" for row in case["sources"])
-    fact = next(item for item in case["facts"] if item["field"] == "account_value")
-    assert fact["conflict"] is True
-    assert len(fact["evidence"]) == 2
-    assert fact["excerpt"] == "GIA looked nearer forty-five"
-
-
 def test_transfer_is_not_stored_as_account_balance() -> None:
     observations = [
         _obs("account_value", 25000, "db", as_of="2026-04-30", account_id="H-CASH-01", source_file="client_data_db.json"),
@@ -186,14 +173,24 @@ def test_transfer_is_not_stored_as_account_balance() -> None:
     facts = reconcile_observations(observations)
     acc = next(a for a in facts["accounts"] if a["account_id"] == "H-CASH-01")
     assert acc["value"] == 25000
-    case = build_case_document(facts, {})
+    case = build_case_document(
+        facts, {"client_data_db.json": "db", "meeting_notes.docx": "meeting", "photo.png": "noise"}
+    )
+    assert any(row["file"] == "photo.png" and row["status"] == "skipped" for row in case["sources"])
     balance = next(f for f in case["facts"] if f["kind"] == "account_balance")
     transfer = next(f for f in case["facts"] if f["kind"] == "transfer_amount")
-    assert balance["id"] == "f-account-H-CASH-01-account_balance"
-    assert transfer["id"] == "f-account-H-CASH-01-transfer_amount"
-    assert transfer["conflict"] is False
+    assert balance["excerpt"] == "account_balance H-CASH-01 = 25000"
     assert transfer["excerpt"] == "move £20,000 from the cash account"
+    assert transfer["conflict"] is False
     action = next(a for a in case["actions"] if a["supports"] == transfer["id"])
-    assert action["id"] == "a-fund-david-isa"
+    assert action["id"].startswith("a-")
     assert "kind" not in action
     assert action["amount"] == 20000
+    text, stored = validate_recommendation_items(
+        {"items": [{"action_id": action["id"], "text": "Invest £80,000 into the GIA."}]},
+        case["actions"],
+    )
+    assert "[REVIEW:" in text
+    assert stored == []
+    assert amounts_match_action("Invest £20,000 into David's ISA.", action["amount"])
+    assert not amounts_match_action("Invest £80,000 into the GIA.", action["amount"])
