@@ -22,7 +22,7 @@ def _sample_facts():
             },
             {
                 "field": "accounts_covered",
-                "value": "Holloway ISAs and joint GIA",
+                "value": "Holloway ISAs, joint GIA, and cash accounts",
                 "source_role": "request",
                 "source_file": "report_request.docx",
             },
@@ -103,7 +103,7 @@ def test_holdings_table_shows_conflict_and_null_review() -> None:
     table = render_holdings_table(facts)
     assert "H-GIA-J" in table
     assert "£45,000" in table or "45000" in table
-    assert "conflict" in table.lower() or "REVIEW" in table
+    assert "REVIEW" in table
     assert "H-CASH-JE" in table
     assert "[REVIEW: H-CASH-JE value]" in table
 
