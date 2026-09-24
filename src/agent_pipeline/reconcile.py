@@ -488,7 +488,41 @@ def build_actions(case_facts: list[dict[str, Any]], reconciled: dict[str, Any]) 
             add(fact, "fund" if product else "move", who)
     if not actions and "f-investment_amount" in by_id:
         add(by_id["f-investment_amount"], "fund", str(product or owner or "client"))
-    return actions
+    return _collapse_unambiguous_request_amount(actions, by_id)
+
+
+def _collapse_unambiguous_request_amount(
+    actions: list[dict[str, Any]], by_id: dict[str, dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Drop a request investment_amount when exactly one transfer has the same amount.
+
+    Identity is unambiguous only in that case. An unparsable amount, or two
+    other transfers with the same number, leaves every action in place.
+    The kept action is the movement, not the request instruction. ``supports``
+    stays that fact id. ``corroborated`` records the request fact id.
+    """
+    drop: set[int] = set()
+    for index, action in enumerate(actions):
+        fact = by_id.get(action.get("supports")) or {}
+        if fact.get("field") != "investment_amount":
+            continue
+        amount = _to_number(action.get("amount"))
+        if amount is None:
+            continue
+        matches = [
+            other_index
+            for other_index, other in enumerate(actions)
+            if other_index != index
+            and (by_id.get(other.get("supports")) or {}).get("field") != "investment_amount"
+            and (by_id.get(other.get("supports")) or {}).get("kind") == "transfer_amount"
+            and _to_number(other.get("amount")) is not None
+            and not values_materially_differ(amount, other.get("amount"))
+        ]
+        if len(matches) != 1:
+            continue
+        actions[matches[0]]["corroborated"] = action.get("supports")
+        drop.add(index)
+    return [action for index, action in enumerate(actions) if index not in drop]
 
 
 def sources_from_classifications(classifications: dict[str, str]) -> list[dict[str, str]]:

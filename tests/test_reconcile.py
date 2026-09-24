@@ -194,3 +194,63 @@ def test_transfer_is_not_stored_as_account_balance() -> None:
     assert stored == []
     assert amounts_match_action("Invest £20,000 into David's ISA.", action["amount"])
     assert not amounts_match_action("Invest £80,000 into the GIA.", action["amount"])
+
+
+def _transfer_case(observations: list[dict]) -> dict:
+    for obs in observations:
+        if obs["field"] == "account_value" and obs["source_role"] == "meeting":
+            obs["kind"] = "transfer_amount"
+        if obs["field"] == "investment_amount":
+            obs["kind"] = "transfer_amount"
+    return build_case_document(reconcile_observations(observations), {})
+
+
+def test_request_amount_corroborates_one_transfer() -> None:
+    case = _transfer_case(
+        [
+            _obs("account_value", 25000, "db", as_of="2026-04-30", account_id="H-CASH-01"),
+            _obs("account_value", 20000, "meeting", as_of="2026-05-12", account_id="H-CASH-01"),
+            _obs("investment_amount", "GBP 20,000", "request"),
+            _obs("product", "Top up of existing Stocks & Shares ISA", "request"),
+        ]
+    )
+    assert len(case["actions"]) == 1
+    action = case["actions"][0]
+    transfer = next(f for f in case["facts"] if f["field"] == "account_value" and f["kind"] == "transfer_amount")
+    request = next(f for f in case["facts"] if f["field"] == "investment_amount")
+    assert action["supports"] == transfer["id"]
+    assert action["corroborated"] == request["id"]
+    assert action["amount"] == 20000
+
+
+def test_request_amount_collapses_only_the_matching_transfer() -> None:
+    case = _transfer_case(
+        [
+            _obs("account_value", 25000, "db", as_of="2026-04-30", account_id="H-CASH-01"),
+            _obs("account_value", 52000, "db", as_of="2026-04-30", account_id="H-ISA-01"),
+            _obs("account_value", 20000, "meeting", as_of="2026-05-12", account_id="H-CASH-01"),
+            _obs("account_value", 50000, "meeting", as_of="2026-05-12", account_id="H-ISA-01"),
+            _obs("investment_amount", "GBP 20,000", "request"),
+            _obs("product", "Top up", "request"),
+        ]
+    )
+    assert len(case["actions"]) == 2
+    corroborated = [a for a in case["actions"] if a.get("corroborated")]
+    assert len(corroborated) == 1
+    assert corroborated[0]["amount"] == 20000
+    assert any(a["amount"] == 50000 and "corroborated" not in a for a in case["actions"])
+
+
+def test_same_amount_on_two_transfers_stays_separate() -> None:
+    case = _transfer_case(
+        [
+            _obs("account_value", 25000, "db", as_of="2026-04-30", account_id="H-CASH-01"),
+            _obs("account_value", 52000, "db", as_of="2026-04-30", account_id="H-ISA-01"),
+            _obs("account_value", 20000, "meeting", as_of="2026-05-12", account_id="H-CASH-01"),
+            _obs("account_value", 20000, "meeting", as_of="2026-05-12", account_id="H-ISA-01"),
+            _obs("investment_amount", "GBP 20,000", "request"),
+            _obs("product", "Top up", "request"),
+        ]
+    )
+    assert len(case["actions"]) == 3
+    assert all("corroborated" not in action for action in case["actions"])
