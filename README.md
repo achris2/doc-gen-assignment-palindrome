@@ -14,7 +14,7 @@ uv sync                       # or: pip install -e .
 ## Run
 
 ```bash
-uv run python -m agent_pipeline.generate --client client_01_clean
+uv run python -m agent_pipeline.main --client client_01_clean
 # report is written to outputs/client_01_clean.md - This will run for client_01, we would recommend reviewing data/code before running on other clients.
 ```
 
@@ -31,8 +31,10 @@ Available clients live under `data/`:
 config/template_config.json          the report definition: sections, prompts, inclusion rules
         │
         ▼
-src/agent_pipeline/generate.py       reads the client's files, then for each section decides
-        │                            inclusion and fills its prompts from the client's data
+src/agent_pipeline/main.py           entry point: Retrieve → Extract → Reconcile → Write
+        │
+        ▼
+src/agent_pipeline/generate.py       for each section, decides inclusion and fills prompts
         ▼
 src/document_formatter/formatting.py assembles the sections into the final .md document
         │
