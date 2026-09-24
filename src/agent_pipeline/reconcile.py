@@ -436,6 +436,7 @@ def build_case_document(
                 "excerpt": excerpt_for(draft, kind=kind),
                 "conflict": bool(item.get("conflict")),
                 "kind": kind,
+                "account_id": account_id,
                 "evidence": [
                     {
                         "source_file": obs.get("source_file"),
@@ -451,11 +452,59 @@ def build_case_document(
     return {
         "sources": sources_from_classifications(classifications or {}),
         "facts": case_facts,
+        "actions": build_actions(case_facts, reconciled),
         "selling": reconciled.get("selling"),
         "conflicts": reconciled.get("conflicts") or [],
         "review_items": reconciled.get("review_items") or [],
         "accounts": reconciled.get("accounts") or [],
     }
+
+
+def _slug(value: Any) -> str:
+    text = re.sub(r"[^a-z0-9]+", "-", str(value or "").lower()).strip("-")
+    return text or "unknown"
+
+
+def action_id_for(action_type: str, owner_or_product: str) -> str:
+    return f"a-{_slug(action_type)}-{_slug(owner_or_product)}"
+
+
+def build_actions(case_facts: list[dict[str, Any]], reconciled: dict[str, Any]) -> list[dict[str, Any]]:
+    """One joined action per non-balance money fact. Amount is not a kind."""
+    by_id = {fact["id"]: fact for fact in case_facts}
+    facts = reconciled.get("facts") or {}
+    product = (facts.get("product") or {}).get("value")
+    owner = (facts.get("ownership") or {}).get("value")
+    source = (facts.get("source_of_funds") or {}).get("value")
+    summary = (facts.get("recommendation_summary") or {}).get("value")
+    actions: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def add(fact: dict[str, Any], action_type: str, who: str) -> None:
+        action_id = action_id_for(action_type, who)
+        if action_id in seen:
+            action_id = f"{action_id}-{_slug(fact['id'])}"
+        seen.add(action_id)
+        actions.append(
+            {
+                "id": action_id,
+                "amount": fact.get("value"),
+                "supports": fact["id"],
+                "who": who,
+                "product": product,
+                "source_of_funds": source,
+                "summary": summary,
+            }
+        )
+
+    for fact in case_facts:
+        kind = fact.get("kind")
+        if kind in MONEY_KINDS and kind != "account_balance":
+            who = str(product or fact.get("account_id") or owner or "client")
+            add(fact, "fund" if product else "move", who)
+    if not actions and "f-investment_amount" in by_id:
+        add(by_id["f-investment_amount"], "fund", str(product or owner or "client"))
+    return actions
 
 
 def write_facts_json(facts: dict[str, Any], path: Path) -> Path:

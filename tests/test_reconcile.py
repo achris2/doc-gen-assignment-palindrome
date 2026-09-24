@@ -179,6 +179,7 @@ def test_transfer_is_not_stored_as_account_balance() -> None:
     observations = [
         _obs("account_value", 25000, "db", as_of="2026-04-30", account_id="H-CASH-01", source_file="client_data_db.json"),
         _obs("account_value", 20000, "meeting", as_of="2026-05-12", account_id="H-CASH-01", source_file="meeting_notes.docx"),
+        _obs("product", "David ISA", "request", source_file="report_request.docx"),
     ]
     observations[1]["kind"] = "transfer_amount"
     observations[1]["quote"] = "move £20,000 from the cash account"
@@ -192,3 +193,7 @@ def test_transfer_is_not_stored_as_account_balance() -> None:
     assert transfer["id"] == "f-account-H-CASH-01-transfer_amount"
     assert transfer["conflict"] is False
     assert transfer["excerpt"] == "move £20,000 from the cash account"
+    action = next(a for a in case["actions"] if a["supports"] == transfer["id"])
+    assert action["id"] == "a-fund-david-isa"
+    assert "kind" not in action
+    assert action["amount"] == 20000
