@@ -1,17 +1,20 @@
-"""Explicit schemas for config, evidence, and the case file.
+"""The types the pipeline passes from one stage to the next.
 
-Every object the pipeline passes between stages is one of these types.
-JSON on disk is produced by ``to_dict`` and is the same shape as before.
+Config, things read from the client files, and the case file for a run.
+``to_dict`` writes the same JSON shape as before.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
-SourceRole = Literal["request", "meeting", "db", "unknown"]
+# Where a fact came from: the report request, the meeting note, or the account database.
+SourceRole = Literal["request", "meeting", "db"]
+# What a file in the client folder is. noise and internal are left out of the report.
 FileRole = Literal["request", "meeting", "db", "noise", "internal"]
+# What a money figure means. Moving £20,000 is a transfer, not a new balance.
 MoneyKind = Literal[
     "account_balance",
     "transfer_amount",
@@ -19,23 +22,59 @@ MoneyKind = Literal[
     "loan_repayment",
     "contingent_proceeds",
 ]
+# Who fills a <<slot>> in the template: fixed code, or the model.
 SlotSource = Literal["render", "llm"]
+# The recommendation slot is given the actions, not the raw facts.
 SlotInput = Literal["actions"]
+# Whether we read the file. Images are skipped.
+ParseStatus = Literal["parsed", "skipped"]
 
-MONEY_KINDS: frozenset[str] = frozenset(
-    {
-        "account_balance",
-        "transfer_amount",
-        "received_proceeds",
-        "loan_repayment",
-        "contingent_proceeds",
-    }
-)
+# Fields we trust the report request for.
+RequestField = Literal[
+    "accounts_covered",
+    "investment_amount",
+    "source_of_funds",
+    "selling",
+    "product",
+    "ownership",
+    "risk_profile",
+    "initial_charge",
+]
+# Fields we trust the meeting note for.
+MeetingField = Literal["circumstances", "objectives", "recommendation_summary"]
+# Columns on an account, other than its value.
+AccountAttr = Literal["type", "owner", "platform", "status", "currency"]
+# Those columns as observation field names, for example account_type.
+DbMetaField = Literal[
+    "account_type",
+    "account_owner",
+    "account_platform",
+    "account_status",
+    "account_currency",
+]
+# The balance, and the date of the database snapshot. The newest dated balance wins.
+DbField = Literal["account_value", "snapshot_date"]
+FactField = RequestField | MeetingField | DbMetaField | DbField
+
+CORE_ROLES: frozenset[SourceRole] = frozenset(get_args(SourceRole))
+FILE_ROLES: frozenset[FileRole] = frozenset(get_args(FileRole))
+MONEY_KINDS: frozenset[MoneyKind] = frozenset(get_args(MoneyKind))
+REQUEST_FIELDS: frozenset[RequestField] = frozenset(get_args(RequestField))
+MEETING_FIELDS: frozenset[MeetingField] = frozenset(get_args(MeetingField))
+ACCOUNT_ATTRS: frozenset[AccountAttr] = frozenset(get_args(AccountAttr))
+DB_META_FIELDS: frozenset[DbMetaField] = frozenset(get_args(DbMetaField))
+ACCOUNT_FIELD: dict[AccountAttr, DbMetaField] = {
+    "type": "account_type",
+    "owner": "account_owner",
+    "platform": "account_platform",
+    "status": "account_status",
+    "currency": "account_currency",
+}
 
 
 @dataclass
 class Observation:
-    """One piece of evidence taken from a source file."""
+    """One thing read from a source file, with the file it came from."""
 
     field: str
     value: Any
@@ -45,9 +84,9 @@ class Observation:
     account_id: str | None = None
     quote: str | None = None
     approximate: bool | None = None
-    kind: str | None = None
+    kind: MoneyKind | None = None
 
-    def money_kind(self) -> str | None:
+    def money_kind(self) -> MoneyKind | None:
         if self.kind in MONEY_KINDS:
             return self.kind
         if self.field == "account_value":
@@ -63,7 +102,7 @@ class Observation:
 
 @dataclass
 class TypedSource:
-    """A client file that has been classified and read."""
+    """A client file after we have decided what it is and read it."""
 
     path: Path
     name: str
@@ -85,7 +124,7 @@ class TypedSource:
 
 @dataclass
 class DbAccount:
-    """One account row from client_data_db.json. First holder wins on duplicate ids."""
+    """One account from the database file. If an id appears twice, the first one is kept."""
 
     account_id: str
     type: Any = None
@@ -115,7 +154,7 @@ class DbAccount:
 
 @dataclass
 class KnownAccount:
-    """Account identity passed into the meeting extract so the model cannot invent ids."""
+    """An account we already know, shown to the meeting extract so it cannot invent an id."""
 
     account_id: str
     type: Any = None
@@ -131,14 +170,14 @@ class KnownAccount:
 
 @dataclass
 class LlmObservation:
-    """One observation object inside an extract-model payload, before it is trusted."""
+    """One item the extract model returned, before we decide whether to keep it."""
 
     field: str
     value: Any = None
     account_id: str | None = None
     as_of: str | None = None
     approximate: bool | None = None
-    kind: str | None = None
+    kind: MoneyKind | None = None
     quote: str | None = None
 
     @classmethod
@@ -154,7 +193,7 @@ class LlmObservation:
             approximate=data.get("approximate") if isinstance(data.get("approximate"), bool) else (
                 bool(data["approximate"]) if data.get("approximate") is not None else None
             ),
-            kind=data.get("kind") if isinstance(data.get("kind"), str) else None,
+            kind=data.get("kind") if data.get("kind") in MONEY_KINDS else None,
             quote=None if data.get("quote") is None else str(data.get("quote")),
         )
 
@@ -182,7 +221,7 @@ class MeetingExtract:
 @dataclass
 class FileClassification:
     name: str
-    role: str
+    role: FileRole
 
     @classmethod
     def list_from_payload(cls, payload: dict[str, Any]) -> list[FileClassification]:
@@ -192,22 +231,22 @@ class FileClassification:
                 continue
             name = item.get("name")
             role = item.get("role")
-            if isinstance(name, str) and isinstance(role, str):
+            if isinstance(name, str) and role in FILE_ROLES:
                 out.append(cls(name=name, role=role))
         return out
 
 
 @dataclass
 class SourcedValue:
-    """A reconciled scalar fact: the chosen value plus where it came from."""
+    """The value we kept for a field, and which source it came from."""
 
     value: Any
-    source: str | None
+    source: SourceRole | None
     source_file: str | None
     as_of: str | None = None
     account_id: str | None = None
     conflict: bool = False
-    kind: str | None = None
+    kind: MoneyKind | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data: dict[str, Any] = {
@@ -227,7 +266,7 @@ class SourcedValue:
 @dataclass
 class ValueAlternate:
     value: Any
-    source_role: str | None
+    source_role: SourceRole | None
     source_file: str | None
     as_of: str | None
     quote: str | None
@@ -244,21 +283,21 @@ class ValueAlternate:
 
 @dataclass
 class Account:
-    """A custody account. Only the database may create one."""
+    """A client account. Only the database can create one."""
 
     account_id: str
     type: Any = None
-    type_source: str | None = None
+    type_source: SourceRole | None = None
     owner: Any = None
-    owner_source: str | None = None
+    owner_source: SourceRole | None = None
     platform: Any = None
-    platform_source: str | None = None
+    platform_source: SourceRole | None = None
     status: Any = None
-    status_source: str | None = None
+    status_source: SourceRole | None = None
     currency: Any = None
-    currency_source: str | None = None
+    currency_source: SourceRole | None = None
     value: Any = None
-    value_source: str | None = None
+    value_source: SourceRole | None = None
     value_source_file: str | None = None
     as_of: str | None = None
     value_conflict: bool = False
@@ -268,8 +307,8 @@ class Account:
     value_alternates: list[ValueAlternate] = field(default_factory=list)
     _assigned: set[str] = field(default_factory=set, repr=False)
 
-    def set_meta(self, name: str, value: Any, source: str | None) -> None:
-        if name not in {"type", "owner", "platform", "status", "currency"}:
+    def set_meta(self, name: str, value: Any, source: SourceRole | None) -> None:
+        if name not in ACCOUNT_ATTRS:
             raise ValueError(f"Unknown account attribute {name!r}")
         setattr(self, name, value)
         setattr(self, f"{name}_source", source)
@@ -280,7 +319,7 @@ class Account:
         self,
         *,
         value: Any,
-        source: str | None,
+        source: SourceRole | None,
         source_file: str | None,
         as_of: str | None,
         conflict: bool = False,
@@ -352,11 +391,11 @@ class Conflict:
 
 @dataclass
 class RecordedFact:
-    """A reconciled group kept so the case file can cite every supporting observation."""
+    """The value we kept, plus every reading that supported it, so the case file can cite them."""
 
     field: str
     account_id: str | None
-    kind: str | None
+    kind: MoneyKind | None
     draft: Observation
     group: list[Observation]
     conflict: bool
@@ -399,9 +438,9 @@ class ReconciledFacts:
 @dataclass
 class Evidence:
     source_file: str | None
-    source_role: str | None
+    source_role: SourceRole | None
     value: Any
-    kind: str | None
+    kind: MoneyKind | None
     excerpt: str
 
     def to_dict(self) -> dict[str, Any]:
@@ -422,7 +461,7 @@ class CaseFact:
     source_file: str | None
     excerpt: str
     conflict: bool
-    kind: str | None
+    kind: MoneyKind | None
     account_id: str | None
     evidence: list[Evidence]
 
@@ -442,7 +481,7 @@ class CaseFact:
 
 @dataclass
 class RecommendationAction:
-    """A joined recommendation. The amount is a figure, not a money kind."""
+    """One recommendation. amount is the figure to write; it is not a money kind."""
 
     id: str
     amount: Any
@@ -503,7 +542,7 @@ class RecommendationItem:
 
 @dataclass
 class RecommendationDraft:
-    """The recommendation slot's JSON: one item per action id."""
+    """What the model returns for the recommendation slot: one sentence per action."""
 
     items: list[RecommendationItem]
 
@@ -520,7 +559,7 @@ class RecommendationDraft:
 
 @dataclass
 class NarrativeDraft:
-    """A prose slot's JSON: the sentence and the fact ids it used."""
+    """What the model returns for a written slot: the sentence, and the fact ids it used."""
 
     text: str
     fact_ids: list[str]
@@ -546,8 +585,8 @@ class RecommendationSection:
 @dataclass
 class SourceRecord:
     file: str
-    role: str
-    status: str
+    role: FileRole
+    status: ParseStatus
 
     def to_dict(self) -> dict[str, str]:
         return {"file": self.file, "role": self.role, "status": self.status}
@@ -573,7 +612,7 @@ class RunHeader:
 
 @dataclass
 class CaseDocument:
-    """The evidence file for one run: sources, facts, actions, and what each section cited."""
+    """Everything one run keeps: sources, facts, actions, and which facts each section used."""
 
     run: RunHeader | None
     sources: list[SourceRecord]
@@ -620,7 +659,7 @@ class Always:
 
 @dataclass(frozen=True)
 class FactEquals:
-    """Include the section when a top-level reconciled flag matches."""
+    """Include this section when a yes/no fact matches, for example selling is true."""
 
     fact: str
     equals: bool
@@ -633,7 +672,7 @@ class FactEquals:
 
 @dataclass(frozen=True)
 class LegacySellingPhrase:
-    """Plain-language use_if kept for older configs that mention selling."""
+    """Older configs say when to include a section in plain words, such as 'when selling'."""
 
     text: str
 
@@ -735,5 +774,5 @@ class TemplateConfig:
         )
 
     def document_dict(self) -> dict[str, str]:
-        """The slice document_formatter.formatting expects."""
+        """The title, in the shape the document formatter expects."""
         return {"document_title": self.document_title}

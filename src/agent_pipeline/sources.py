@@ -8,13 +8,12 @@ from openai import OpenAI
 from document_formatter.loading import read_file
 
 from agent_pipeline.llm import JsonChat
-from agent_pipeline.schema import FileClassification, FileRole, TypedSource
+from agent_pipeline.schema import CORE_ROLES, FILE_ROLES, FileClassification, FileRole, TypedSource
 
 Role = FileRole
 
-CORE_ROLES: frozenset[str] = frozenset({"request", "meeting", "db"})
-WRITER_ROLES: frozenset[str] = CORE_ROLES
-ALLOWED_ROLES: frozenset[str] = frozenset({"request", "meeting", "db", "noise", "internal"})
+WRITER_ROLES: frozenset[FileRole] = CORE_ROLES
+ALLOWED_ROLES: frozenset[FileRole] = FILE_ROLES
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
 PREVIEW_CHARS = 1200
@@ -103,7 +102,7 @@ def classify_unmatched_with_llm(
     out = dict(default)
     for item in FileClassification.list_from_payload(payload):
         if item.name in out and item.role in ALLOWED_ROLES:
-            out[item.name] = item.role  # type: ignore[assignment]
+            out[item.name] = item.role
     return out
 
 

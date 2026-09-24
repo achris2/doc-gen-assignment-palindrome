@@ -7,42 +7,29 @@ import json
 import re
 
 from agent_pipeline.schema import (
+    DB_META_FIELDS,
+    MEETING_FIELDS,
     MONEY_KINDS,
+    REQUEST_FIELDS,
     Account,
     CaseDocument,
     CaseFact,
     Conflict,
     Evidence,
+    FileRole,
+    MoneyKind,
     Observation,
+    ParseStatus,
     RecommendationAction,
     RecommendationDraft,
     RecommendationItem,
     RecordedFact,
     ReconciledFacts,
     RunHeader,
+    SourceRole,
     SourcedValue,
     SourceRecord,
     ValueAlternate,
-)
-
-# Field-specific preferred authority (non-amount). Amounts use freshness instead.
-_REQUEST_FIELDS = frozenset(
-    {
-        "accounts_covered",
-        "investment_amount",
-        "source_of_funds",
-        "selling",
-        "product",
-        "ownership",
-        "risk_profile",
-        "initial_charge",
-    }
-)
-_MEETING_FIELDS = frozenset(
-    {"circumstances", "objectives", "recommendation_summary"}
-)
-_DB_META_FIELDS = frozenset(
-    {"account_type", "account_owner", "account_platform", "account_status", "account_currency"}
 )
 
 FEE_REVIEW_ITEMS = (
@@ -93,12 +80,12 @@ def values_materially_differ(a: Any, b: Any) -> bool:
     return sa != sb
 
 
-def _preferred_role(field: str) -> str | None:
-    if field in _REQUEST_FIELDS:
+def _preferred_role(field: str) -> SourceRole | None:
+    if field in REQUEST_FIELDS:
         return "request"
-    if field in _MEETING_FIELDS:
+    if field in MEETING_FIELDS:
         return "meeting"
-    if field in _DB_META_FIELDS or field.startswith("account_"):
+    if field in DB_META_FIELDS or field.startswith("account_"):
         if field == "account_value":
             return None
         return "db"
@@ -164,7 +151,9 @@ def _conflict_details(group: list[Observation]) -> str:
     return "; ".join(parts)
 
 
-def _sourced(draft: Observation, account_id: str | None, conflict: bool, kind: str | None = None) -> SourcedValue:
+def _sourced(
+    draft: Observation, account_id: str | None, conflict: bool, kind: MoneyKind | None = None
+) -> SourcedValue:
     return SourcedValue(
         value=draft.value,
         source=draft.source_role,
@@ -337,7 +326,7 @@ def _slug(value: Any) -> str:
     return text or "unknown"
 
 
-def excerpt_for(obs: Observation, *, kind: str | None = None) -> str:
+def excerpt_for(obs: Observation, *, kind: MoneyKind | None = None) -> str:
     if obs.quote:
         return obs.quote
     label = kind or obs.field or "field"
@@ -345,7 +334,7 @@ def excerpt_for(obs: Observation, *, kind: str | None = None) -> str:
     return f"{prefix} = {obs.value}"
 
 
-def fact_id_for(field: str, account_id: str | None, kind: str | None) -> str:
+def fact_id_for(field: str, account_id: str | None, kind: MoneyKind | None) -> str:
     if account_id and kind:
         return f"f-account-{account_id}-{kind}"
     if account_id:
@@ -353,7 +342,7 @@ def fact_id_for(field: str, account_id: str | None, kind: str | None) -> str:
     return f"f-{field}"
 
 
-def evidence_rows(group: list[Observation], kind: str | None) -> list[Evidence]:
+def evidence_rows(group: list[Observation], kind: MoneyKind | None) -> list[Evidence]:
     rows = []
     for obs in group:
         row_kind = obs.money_kind() or kind
@@ -464,18 +453,18 @@ def _collapse_unambiguous_request_amount(
     return [action for index, action in enumerate(actions) if index not in drop]
 
 
-def sources_from_classifications(classifications: dict[str, str]) -> list[SourceRecord]:
+def sources_from_classifications(classifications: dict[str, FileRole]) -> list[SourceRecord]:
     image = {".png", ".jpg", ".jpeg"}
     rows = []
     for name, role in sorted(classifications.items()):
-        status = "skipped" if Path(name).suffix.lower() in image else "parsed"
+        status: ParseStatus = "skipped" if Path(name).suffix.lower() in image else "parsed"
         rows.append(SourceRecord(file=name, role=role, status=status))
     return rows
 
 
 def build_case_document(
     reconciled: ReconciledFacts,
-    classifications: dict[str, str] | None = None,
+    classifications: dict[str, FileRole] | None = None,
     *,
     run: RunHeader | None = None,
 ) -> CaseDocument:

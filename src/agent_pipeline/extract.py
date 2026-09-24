@@ -9,16 +9,20 @@ from openai import OpenAI
 
 from agent_pipeline.llm import JsonChat
 from agent_pipeline.schema import (
+    ACCOUNT_FIELD,
     MONEY_KINDS,
+    AccountAttr,
     DbAccount,
     KnownAccount,
     MeetingExtract,
+    MoneyKind,
     Observation,
+    RequestField,
     SourceRole,
     TypedSource,
 )
 
-_REQUEST_FIELD_MAP: dict[str, str] = {
+_REQUEST_FIELD_MAP: dict[str, RequestField] = {
     "accounts covered": "accounts_covered",
     "investment amount": "investment_amount",
     "source of funds": "source_of_funds",
@@ -104,7 +108,7 @@ def observation(
     account_id: str | None = None,
     quote: str | None = None,
     approximate: bool | None = None,
-    kind: str | None = None,
+    kind: MoneyKind | None = None,
 ) -> Observation:
     return Observation(
         field=field,
@@ -155,7 +159,7 @@ def extract_request_observations(
 ) -> list[Observation]:
     """Deterministic request extract; LLM fallback if no known keys found."""
     pairs = parse_request_kv_lines(text)
-    mapped: dict[str, str] = {}
+    mapped: dict[RequestField, str] = {}
     for key, value in pairs.items():
         field = _REQUEST_FIELD_MAP.get(key)
         if field:
@@ -272,7 +276,7 @@ def extract_db_observations(
     for account in parse_db_accounts(parsed):
         as_of = account.valuation_date
         as_of_str = str(as_of) if as_of else (str(snapshot_date) if snapshot_date else None)
-        meta = {
+        meta: dict[AccountAttr, Any] = {
             "type": account.type,
             "owner": account.owner,
             "platform": account.platform,
@@ -283,7 +287,7 @@ def extract_db_observations(
             if meta_value is not None:
                 out.append(
                     observation(
-                        field=f"account_{meta_field}",
+                        field=ACCOUNT_FIELD[meta_field],
                         value=meta_value,
                         source_role="db",
                         source_file=source_file,
