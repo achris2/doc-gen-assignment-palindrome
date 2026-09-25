@@ -391,6 +391,187 @@ def check_actions_and_items(bundle: ClientBundle) -> CheckResult:
     )
 
 
+NARRATIVE_FIELDS = frozenset({"circumstances", "objectives", "recommendation_summary"})
+
+
+def _fact_rows(bundle: ClientBundle) -> list[dict[str, Any]]:
+    facts = bundle.facts.get("facts")
+    if not isinstance(facts, list):
+        return []
+    return [row for row in facts if isinstance(row, dict)]
+
+
+def _action_rows(bundle: ClientBundle) -> list[dict[str, Any]]:
+    actions = bundle.facts.get("actions")
+    if not isinstance(actions, list):
+        return []
+    return [row for row in actions if isinstance(row, dict)]
+
+
+def _as_number(value: Any) -> float | None:
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        match = re.search(r"(\d[\d,]*(?:\.\d+)?)", value)
+        if not match:
+            return None
+        return float(match.group(1).replace(",", ""))
+    return None
+
+
+def _case(bundle: ClientBundle, check: str, problems: list[str], expected: str) -> CheckResult:
+    return CheckResult(
+        client=bundle.name,
+        check=check,
+        passed=not problems,
+        question="case",
+        evidence="" if not problems else "; ".join(problems),
+        expected=expected,
+    )
+
+
+def check_narrative_not_action(bundle: ClientBundle) -> CheckResult:
+    """A narrative field is not a money event and must not become an action."""
+    facts = _fact_rows(bundle)
+    by_id = {row.get("id"): row for row in facts}
+    problems: list[str] = []
+    for fact in facts:
+        if fact.get("field") in NARRATIVE_FIELDS and fact.get("kind"):
+            problems.append(f"{fact.get('field')} kind {fact.get('kind')}")
+    for action in _action_rows(bundle):
+        support = by_id.get(action.get("supports")) or {}
+        if support.get("field") not in NARRATIVE_FIELDS:
+            continue
+        if action.get("amount") is None and action.get("amount_status") == "not_agreed":
+            continue
+        problems.append(f"{action.get('id')} from {support.get('field')}")
+    return _case(
+        bundle,
+        "narrative_not_action",
+        problems,
+        "Narrative fields have no money kind and do not generate actions",
+    )
+
+
+_FLOW_KINDS = frozenset({"received_proceeds", "loan_repayment", "contingent_proceeds"})
+
+
+def check_action_amount_numeric(bundle: ClientBundle) -> CheckResult:
+    from agent_pipeline.reconcile import _to_number
+
+    facts = {row.get("id"): row for row in _fact_rows(bundle)}
+    problems: list[str] = []
+    for action in _action_rows(bundle):
+        if action.get("amount") is None and action.get("amount_status") == "not_agreed":
+            continue
+        if _to_number(action.get("amount")) is None:
+            problems.append(f"{action.get('id')} amount {action.get('amount')}")
+        kind = (facts.get(action.get("supports")) or {}).get("kind")
+        if kind != "transfer_amount":
+            problems.append(f"{action.get('id')} supports {kind}")
+    return _case(
+        bundle,
+        "action_amount_numeric",
+        problems,
+        "Every action amount is a number backed by a transfer",
+    )
+
+
+def check_money_kinds_distinct(bundle: ClientBundle) -> CheckResult:
+    """The same amount cannot be both a receipt and a repayment, or contingent."""
+    by_amount: dict[float, set[str]] = {}
+    for fact in _fact_rows(bundle):
+        if fact.get("conflict"):
+            continue
+        kind = fact.get("kind")
+        number = _as_number(fact.get("value"))
+        if kind not in _FLOW_KINDS or number is None:
+            continue
+        by_amount.setdefault(number, set()).add(kind)
+    problems = [
+        f"{int(amount) if amount == int(amount) else amount} kinds {', '.join(sorted(kinds))}"
+        for amount, kinds in sorted(by_amount.items())
+        if len(kinds) > 1
+    ]
+    return _case(
+        bundle,
+        "money_kinds_distinct",
+        problems,
+        "A receipt, repayment, and contingent amount are different facts",
+    )
+
+
+def check_contingent_not_action(bundle: ClientBundle) -> CheckResult:
+    facts = {row.get("id"): row for row in _fact_rows(bundle)}
+    problems = [
+        f"{action.get('id')} supports contingent_proceeds"
+        for action in _action_rows(bundle)
+        if (facts.get(action.get("supports")) or {}).get("kind") == "contingent_proceeds"
+    ]
+    return _case(
+        bundle,
+        "contingent_not_action",
+        problems,
+        "Contingent proceeds are facts and do not become actions",
+    )
+
+
+def _meeting_text(bundle: ClientBundle) -> str:
+    sources = bundle.facts.get("sources") or []
+    name = next((row.get("file") for row in sources if isinstance(row, dict) and row.get("role") == "meeting"), None)
+    if not name:
+        return ""
+    path = bundle.data_dir / str(name)
+    if not path.exists():
+        return ""
+    from document_formatter.loading import read_file
+
+    return read_file(path)
+
+
+def _has_amount(facts: list[dict[str, Any]], amount: float) -> bool:
+    for fact in facts:
+        number = _as_number(fact.get("value"))
+        if number is not None and abs(number - amount) <= 0.01:
+            return True
+    return False
+
+
+def check_meeting_pounds_covered(bundle: ClientBundle) -> CheckResult:
+    from agent_pipeline.reconcile import pound_amounts
+
+    missing = [
+        str(int(amount) if amount == int(amount) else amount)
+        for amount in pound_amounts(_meeting_text(bundle))
+        if not _has_amount(_fact_rows(bundle), amount)
+    ]
+    return _case(
+        bundle,
+        "meeting_pounds_covered",
+        [f"£{token} missing" for token in missing],
+        "Every £ amount in the meeting note is a numeric fact value",
+    )
+
+
+def check_selling_has_transfer(bundle: ClientBundle) -> CheckResult:
+    facts = _fact_rows(bundle)
+    selling = any(row.get("field") == "selling" and row.get("value") is True for row in facts)
+    if not selling:
+        return _case(bundle, "selling_has_transfer", [], "A disposal is a transfer fact on an account")
+    linked = any(
+        row.get("kind") == "transfer_amount" and row.get("account_id") and row.get("field") != "selling"
+        for row in facts
+    )
+    return _case(
+        bundle,
+        "selling_has_transfer",
+        [] if linked else ["selling=true without a transfer on an account"],
+        "A disposal is a transfer fact on an account",
+    )
+
+
 def run_checks(bundles: list[ClientBundle]) -> list[CheckResult]:
     results: list[CheckResult] = []
     for bundle in bundles:
@@ -404,6 +585,12 @@ def run_checks(bundles: list[ClientBundle]) -> list[CheckResult]:
         results.append(_tagged(check_tax_iff_selling(bundle), "story"))
         results.append(_tagged(check_table_account_ids(bundle), "story"))
         results.append(_tagged(check_conflicts_surfaced(bundle), "story"))
+        results.append(check_narrative_not_action(bundle))
+        results.append(check_action_amount_numeric(bundle))
+        results.append(check_contingent_not_action(bundle))
+        results.append(check_money_kinds_distinct(bundle))
+        results.append(check_meeting_pounds_covered(bundle))
+        results.append(check_selling_has_transfer(bundle))
     return results
 
 
@@ -421,7 +608,7 @@ def format_eval(results: list[CheckResult]) -> str:
     """Four headings. No single averaged score."""
     counts = question_counts(results)
     lines = ["# Eval", ""]
-    for question in ("read", "facts", "section", "story"):
+    for question in ("read", "facts", "section", "story", "case"):
         bucket = counts.get(question, {"passed": 0, "total": 0})
         lines.append(f"## {question.title()}")
         lines.append("")
@@ -582,8 +769,8 @@ def format_history(history: list[dict[str, Any]]) -> str:
         "",
         "Each row is one generation. Delta is against the previous time that same client and check were scored.",
         "",
-        "| Run | When | Read | Facts | Section | Story | Delta | Qualitative |",
-        "|-----|------|------|-------|---------|-------|-------|-------------|",
+        "| Run | When | Read | Facts | Section | Story | Case | Delta | Qualitative |",
+        "|-----|------|------|-------|---------|-------|------|-------|-------------|",
     ]
     prior: list[dict[str, Any]] = []
     details: list[str] = []
@@ -601,7 +788,7 @@ def format_history(history: list[dict[str, Any]]) -> str:
         clients = ", ".join(record.get("clients") or [])
         lines.append(
             f"| {record.get('run', '')} ({clients}) | {record.get('recorded_at', '')} | "
-            f"{_cell('read')} | {_cell('facts')} | {_cell('section')} | {_cell('story')} | "
+            f"{_cell('read')} | {_cell('facts')} | {_cell('section')} | {_cell('story')} | {_cell('case')} | "
             f"{format_delta(delta)} | {note} |"
         )
         moved = []
@@ -679,7 +866,7 @@ def main() -> None:
     eval_path.write_text(format_eval(results), encoding="utf-8")
     counts = question_counts(results)
     print(f"Wrote {eval_path}")
-    for name in ("read", "facts", "section", "story"):
+    for name in ("read", "facts", "section", "story", "case"):
         bucket = counts.get(name, {"passed": 0, "total": 0})
         print(f"{name}: {bucket['passed']}/{bucket['total']}")
 

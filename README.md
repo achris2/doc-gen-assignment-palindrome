@@ -45,7 +45,7 @@ One file is kept per role. A second meeting, request, or custody file overwrites
 
 ## Eval
 
-Deterministic checks, no model. Reported as four counts, not one score: **Read**, **Facts**, **Section**, **Story**.
+Deterministic checks, no model. Reported as five counts, not one score: **Read**, **Facts**, **Section**, **Story**, **Case**. Case checks the representation: only a numeric transfer becomes an action, a receipt or repayment does not, the same amount is not two flow kinds, every meeting £ amount is a fact value, and a disposal is a transfer on an account.
 
 ```bash
 uv run python -m eval.checks --outputs-dir outputs

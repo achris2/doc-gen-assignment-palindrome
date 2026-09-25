@@ -358,6 +358,127 @@ def test_actions_and_items() -> None:
     assert "amount mismatch" in mismatch.evidence
 
 
+def test_narrative_summary_is_not_an_action() -> None:
+    from eval.checks import check_action_amount_numeric, check_narrative_not_action
+
+    facts = {
+        "facts": [
+            {
+                "id": "f-recommendation_summary",
+                "field": "recommendation_summary",
+                "kind": "transfer_amount",
+                "value": "Move £20,000 from cash into the ISA.",
+            },
+            {"id": "f-transfer", "field": "account_value", "kind": "transfer_amount", "value": 20000},
+        ],
+        "actions": [
+            {
+                "id": "a-fund-isa",
+                "amount": 20000,
+                "supports": "f-transfer",
+                "source_of_funds": "Cash account",
+                "product": "Stocks & Shares ISA",
+            },
+            {
+                "id": "a-fund-isa-f-recommendation-summary",
+                "amount": "Move £20,000 from cash into the ISA.",
+                "supports": "f-recommendation_summary",
+                "source_of_funds": "Cash account",
+                "product": "Stocks & Shares ISA",
+            },
+        ],
+        "sections": {
+            "recommendation": {
+                "items": [{"action_id": "a-fund-isa", "text": "Move £20,000 from the cash account into the ISA."}]
+            }
+        },
+    }
+    promoted = check_narrative_not_action(_bundle(name="client_01_clean", facts=facts))
+    assert not promoted.passed
+    assert "recommendation_summary" in promoted.evidence
+    amounts = check_action_amount_numeric(_bundle(name="client_01_clean", facts=facts))
+    assert not amounts.passed
+    assert "amount" in amounts.evidence
+
+    clean = {
+        "facts": [{"id": "f-transfer", "field": "account_value", "kind": "transfer_amount", "value": 20000}],
+        "actions": [
+            {
+                "id": "a-fund-isa",
+                "amount": 20000,
+                "supports": "f-transfer",
+                "source_of_funds": "Cash account",
+                "product": "Stocks & Shares ISA",
+            }
+        ],
+        "sections": {
+            "recommendation": {
+                "items": [{"action_id": "a-fund-isa", "text": "Move £20,000 from the cash account into the ISA."}]
+            }
+        },
+    }
+    assert check_narrative_not_action(_bundle(name="client_01_clean", facts=clean)).passed
+    assert check_action_amount_numeric(_bundle(name="client_01_clean", facts=clean)).passed
+
+
+def test_case_invariants_ignore_review_quotes() -> None:
+    from eval.checks import (
+        check_contingent_not_action,
+        check_meeting_pounds_covered,
+        check_selling_has_transfer,
+    )
+
+    facts = {
+        "facts": [
+            {"id": "f-selling", "field": "selling", "value": True},
+            {"id": "f-contingent", "field": "money_amount_400000", "kind": "contingent_proceeds", "value": 400000},
+        ],
+        "actions": [{"id": "a-earnout", "amount": 400000, "supports": "f-contingent"}],
+        "review_items": ["[REVIEW: unmatched figure: completion payment of £850,000]"],
+        "sources": [],
+    }
+    bundle = _bundle(name="client_04_stretch", facts=facts)
+    contingent = check_contingent_not_action(bundle)
+    assert not contingent.passed
+    assert "contingent_proceeds" in contingent.evidence
+    assert check_meeting_pounds_covered(bundle).passed
+    disposal = check_selling_has_transfer(bundle)
+    assert not disposal.passed
+    assert "selling=true" in disposal.evidence
+    covered = {
+        "facts": [
+            {"id": "f-selling", "field": "selling", "value": True},
+            {"id": "f-gia", "field": "account_value", "kind": "transfer_amount", "account_id": "H-GIA-J", "value": 45000},
+        ],
+        "actions": [],
+        "sources": [],
+    }
+    assert check_selling_has_transfer(_bundle(facts=covered)).passed
+
+
+def test_same_amount_cannot_be_two_flow_kinds() -> None:
+    from eval.checks import check_action_amount_numeric, check_money_kinds_distinct
+
+    facts = {
+        "facts": [
+            {"id": "f-received", "kind": "received_proceeds", "value": 850000},
+            {"id": "f-repay", "kind": "loan_repayment", "value": 850000},
+            {"id": "f-transfer", "kind": "transfer_amount", "value": 20000},
+        ],
+        "actions": [
+            {"id": "a-repay", "amount": 850000, "supports": "f-repay"},
+            {"id": "a-transfer", "amount": 20000, "supports": "f-transfer"},
+        ],
+    }
+    bundle = _bundle(facts=facts)
+    kinds = check_money_kinds_distinct(bundle)
+    assert not kinds.passed
+    assert "850000" in kinds.evidence
+    actions = check_action_amount_numeric(bundle)
+    assert not actions.passed
+    assert "supports loan_repayment" in actions.evidence
+
+
 def test_discover_and_scorecard_on_repo_outputs() -> None:
     root = Path(__file__).resolve().parents[1]
     outputs = root / "outputs"
