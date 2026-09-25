@@ -4,6 +4,7 @@ from agent_pipeline.hitl import append_hitl_footer, render_human_review, render_
 from agent_pipeline.reconcile import build_case_document, reconcile_observations
 from agent_pipeline.render import (
     account_in_scope,
+    action_bullet_text,
     render_cgt_statement,
     render_decision_sentences,
     render_fees,
@@ -16,6 +17,7 @@ from agent_pipeline.render import (
 from agent_pipeline.schema import (
     Account,
     Observation,
+    RecommendationAction,
     ReconciledFacts,
     SectionSpec,
     SourcedValue,
@@ -132,6 +134,37 @@ def _sample_facts():
             _obs("account_owner", "Jean", "db", source_file="db.json", account_id="H-CASH-JE"),
         ]
     )
+
+
+def test_action_bullet_uses_only_the_stored_action() -> None:
+    agreed = RecommendationAction(
+        id="a-fund-h-cash-01",
+        amount=20000,
+        supports="f-transfer",
+        who="H-CASH-01",
+        product="Top up of existing Stocks & Shares ISA",
+        source_of_funds="Cash held on deposit in the Holloway cash account",
+        summary="We agreed she would move £20,000 from the cash account into the Stocks & Shares ISA.",
+    )
+    text = action_bullet_text(agreed)
+    assert text.startswith("We agreed she would move £20,000")
+    assert "Amount: £20,000." in text
+    assert "Source of funds: cash held on deposit in the Holloway cash account." in text
+    assert "H-CASH-01" not in text
+    unfixed = RecommendationAction(
+        id="a-contribute-not-agreed",
+        amount=None,
+        supports="f-recommendation_summary",
+        who="ISA top-ups",
+        product="ISA top-ups",
+        source_of_funds="Joint General Investment Account",
+        summary="We agreed to disinvest the joint GIA in full",
+        amount_status="not_agreed",
+    )
+    unfixed_text = action_bullet_text(unfixed)
+    assert "The amounts have not yet been finalised." in unfixed_text
+    assert "£" not in unfixed_text
+    assert "Source of funds: joint General Investment Account." in unfixed_text
 
 
 def test_render_scope_and_fees_and_cgt() -> None:

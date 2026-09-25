@@ -35,7 +35,7 @@
       "id": "recommendations",
       "title": "Recommendations",
       "use_if": "always",
-      "template": "We recommend the following:\n\n<<recommendation>>",
+      "template": "We recommend the following:\n\n<<recommendation>>\n\nThis follows the objectives and risk profile recorded above. Platform and ongoing charges are set out in Fees & Charges.",
       "placeholders": {
         "recommendation": {
           "source": "llm",

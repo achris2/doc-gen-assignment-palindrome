@@ -3,7 +3,14 @@
 import re
 from typing import Any
 
-from agent_pipeline.schema import Account, CaseDocument, MoneyAvailability, ReconciledFacts, project_money
+from agent_pipeline.schema import (
+    Account,
+    CaseDocument,
+    MoneyAvailability,
+    RecommendationAction,
+    ReconciledFacts,
+    project_money,
+)
 
 
 def format_money(value: Any) -> str:
@@ -120,6 +127,24 @@ def render_holdings_table(facts: ReconciledFacts) -> str:
             value = format_money(account.value)
         lines.append(f"| {aid} | {owner} | {typ} | {value} |")
     return "\n".join(lines)
+
+
+def action_bullet_text(action: RecommendationAction) -> str:
+    """One recommendation line from the stored action. No other figures."""
+    summary = str(action.summary or "").strip()
+    if summary and not summary.endswith("."):
+        summary += "."
+    parts: list[str] = []
+    if summary:
+        parts.append(summary)
+    if action.amount_status == "not_agreed" or action.amount is None:
+        parts.append("The amounts have not yet been finalised.")
+    else:
+        parts.append(f"Amount: {format_money(action.amount)}.")
+    source = str(action.source_of_funds or "").strip().rstrip(".")
+    if source:
+        parts.append(f"Source of funds: {source[:1].lower() + source[1:]}.")
+    return " ".join(parts).strip()
 
 
 def render_fees(facts: ReconciledFacts) -> str:

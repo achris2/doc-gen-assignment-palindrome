@@ -10,8 +10,8 @@ from openai import OpenAI
 from document_formatter.formatting import format_document
 
 from agent_pipeline.llm import JsonChat
-from agent_pipeline.reconcile import validate_recommendation_items
 from agent_pipeline.render import (
+    action_bullet_text,
     render_cgt_statement,
     render_decision_sentences,
     render_fees,
@@ -25,8 +25,7 @@ from agent_pipeline.schema import (
     CaseFact,
     NarrativeDraft,
     PlaceholderSpec,
-    RecommendationAction,
-    RecommendationDraft,
+    RecommendationItem,
     ReconciledFacts,
     SectionSpec,
     TemplateConfig,
@@ -100,22 +99,18 @@ class ReportGenerator:
     def _recommendation_items(
         self, spec: PlaceholderSpec, case: CaseDocument, instructions: str
     ) -> str:
+        del spec, instructions
         if not case.actions:
             case.record_recommendation([])
-            return _with_context("The amounts to be invested have not been fixed.", case)
-        if all(action.amount_status == "not_agreed" for action in case.actions):
-            return _with_context(_unfixed_recommendation(case), case)
-        payload = self._chat.complete(
-            f"{_action_context(case.actions)}\n\n---\n\n{instructions}\n\n{spec.prompt}\n"
-            'Return JSON {"items": [{"action_id": "...", "text": "..."}]}. '
-            "One item for every action id above. Do not choose which amount belongs to which action.",
-            stage="recommendation",
-        )
-        text, stored = validate_recommendation_items(
-            RecommendationDraft.from_payload(payload), case.actions
-        )
-        case.record_recommendation(stored)
-        return _with_context(text, case)
+            return _with_context("- The amounts to be invested have not been fixed.", case)
+        items: list[RecommendationItem] = []
+        lines: list[str] = []
+        for action in case.actions:
+            text = action_bullet_text(action)
+            items.append(RecommendationItem(action_id=action.id, text=text))
+            lines.append(f"- {text}")
+        case.record_recommendation(items)
+        return _with_context("\n".join(lines), case)
 
     def _narrative_slot(
         self, name: str, spec: PlaceholderSpec, case: CaseDocument, instructions: str
@@ -148,32 +143,23 @@ def _with_risk_profile(text: str, case: CaseDocument) -> str:
 
 def _with_context(text: str, case: CaseDocument) -> str:
     parts = [text.rstrip()]
-    decisions = render_decision_sentences(case.decisions, already=text)
-    if decisions:
-        parts.append(decisions)
-    extra = render_material_context(case.facts)
-    if extra:
-        parts.append(extra)
-    return " ".join(part for part in parts if part)
+    for sentence in _sentences(render_decision_sentences(case.decisions, already=text)):
+        parts.append(f"- {sentence}")
+    for sentence in _sentences(render_material_context(case.facts)):
+        parts.append(f"- {sentence}")
+    return "\n".join(part for part in parts if part)
 
 
-def _unfixed_recommendation(case: CaseDocument) -> str:
-    """Agreed destinations with no figure. The wording is the stored summary."""
-    action = case.actions[0]
-    summary = str(action.summary or "").strip()
-    if summary and not summary.endswith("."):
-        summary += "."
-    text = f"{summary} The amounts have not yet been finalised.".strip()
-    from agent_pipeline.schema import RecommendationItem
-
-    case.record_recommendation([RecommendationItem(action_id=action.id, text=text)])
-    return text
-
-
-def _action_context(actions: list[RecommendationAction]) -> str:
-    lines = ["RECOMMENDATION ACTIONS (already joined — do not reassign amounts):"]
-    lines.extend(action.line() for action in actions)
-    return "\n".join(lines)
+def _sentences(text: str) -> list[str]:
+    sentences = []
+    for part in text.split(". "):
+        part = part.strip()
+        if not part:
+            continue
+        if not part.endswith("."):
+            part += "."
+        sentences.append(part)
+    return sentences
 
 
 def _fact_context(facts: list[CaseFact]) -> str:
