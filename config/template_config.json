@@ -23,7 +23,7 @@
         "summary": {
           "source": "llm",
           "facts": ["circumstances", "objectives", "risk_profile", "ownership"],
-          "prompt": "Role: Write the Background & Objectives prose for an advice report.\nInputs: Use only the CASE FACTS listed above. Do not re-extract or invent.\nRules:\n1. High-level summary of circumstances and objectives only.\n2. No transaction amounts, top-ups, sale proceeds, tax figures, or £ amounts.\n3. Leave out irrelevant asides unrelated to advice.\n4. Handle sensitive life events (e.g. bereavement, business sale) with care when present in facts — do not sensationalise.\nOutput format: Brief Markdown bullets (circumstances then objectives). No table."
+          "prompt": "Role: Write the Background & Objectives prose for an advice report.\nInputs: Use only the CASE FACTS listed above. Do not re-extract or invent.\nRules:\n1. High-level summary of circumstances and objectives only.\n2. No transaction amounts, top-ups, sale proceeds, tax figures, or £ amounts.\n3. Leave out irrelevant asides unrelated to advice.\n4. Handle sensitive life events (e.g. bereavement, business sale) with care when present in facts — do not sensationalise.\n5. Write an objective only from an objectives fact. risk_profile is not an objective.\nOutput format: Brief Markdown bullets (circumstances then objectives). No table."
         },
         "holdings_table": {
           "source": "render",

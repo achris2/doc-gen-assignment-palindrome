@@ -59,6 +59,8 @@ Known accounts (use ONLY these ids for account_id, otherwise null):
 
 Rules:
 - Capture circumstances, objectives, and the agreed recommendation_summary.
+  Circumstances and objectives are required when the note states them, including a
+  sentence that also contains a figure. A money observation does not replace those fields.
 - Capture live/discussed account values as field "account_value".
 - account_id MUST be exactly one of the known ids above, or null. Never invent ids
   (no joint_GIA, no free-text account names as ids).
@@ -71,9 +73,9 @@ Rules:
   transfer as account_balance.
 - Every £ amount is its own observation. value is that number only, with one kind.
   A second amount in the same sentence is a second observation. Do not give both amounts the same kind
-  unless the note applies that kind to each of them. Money received, including an inheritance or
-  completion payment that has cleared, is received_proceeds and is not circumstances. Money
-  already committed to a repayment is loan_repayment. When a repayment is part of a larger sum
+  unless the note applies that kind to each of them. A figure is its own money observation.
+  Money received, including an inheritance or a completion payment that has cleared, is
+  received_proceeds. Money already committed to a repayment is loan_repayment. When a repayment is part of a larger sum
   already received, emit both observations. The receipt's quote must be a sentence that states
   the receipt. Money that is contingent or not guaranteed is contingent_proceeds and is not a transfer.
 - approximate is true when the note uses hedging language (around, about, a little over, etc.).
