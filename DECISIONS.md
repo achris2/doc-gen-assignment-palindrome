@@ -28,6 +28,8 @@ The pipeline is now classify → extract → reconcile → write → footer. One
 - **The model does not own identity, money, or fixed wording.** It classifies leftover files, extracts the meeting, and writes narrative. Code owns account ids, the holdings table, the FCA line, the risk warning, fee and CGT gaps, and which sections appear.
 - **Colleague notes are not evidence.** `fde_notes.md` is an incomplete earlier pass. Treating it as a source would let a scratch figure into the case.
 - **Kind belongs to the fact, not the action.** Two actions in one recommendation let a checker guess which sentence used which figure. One item per action id removes that guess. Collapsing a request amount onto a single matching transfer stops the same £20,000 being recommended twice.
+
+**A decision is not an action.** Today's numeric transfer is one `transfer` decision. An unfixed recommendation is one `contribute` decision with no amount. Dispose, retain, and confirm come from a second meeting call and stay off the recommendation. A quote has to contain the decision's own verb, so a future aside is not a confirmation and a cash movement is not a retain. `selling` does not create a disposal. Tax names the account only when that decision is present; the section still appears from the selling flag. The larger-figure repayment rule is transitional: the cleaner production direction is for extraction to emit the receipt and the repayment as separate amounts.
 - **Do not average the eval.** A report can read the files and still tell the wrong story. Separate counts show which of those failed. An assertion suite cannot judge tone; that stays a note beside the run.
 
 ## Limits

@@ -555,20 +555,26 @@ def check_meeting_pounds_covered(bundle: ClientBundle) -> CheckResult:
     )
 
 
-def check_selling_has_transfer(bundle: ClientBundle) -> CheckResult:
+def check_selling_has_dispose(bundle: ClientBundle) -> CheckResult:
     facts = _fact_rows(bundle)
     selling = any(row.get("field") == "selling" and row.get("value") is True for row in facts)
     if not selling:
-        return _case(bundle, "selling_has_transfer", [], "A disposal is a transfer fact on an account")
-    linked = any(
-        row.get("kind") == "transfer_amount" and row.get("account_id") and row.get("field") != "selling"
-        for row in facts
-    )
+        return _case(bundle, "selling_has_dispose", [], "selling requires a supported disposal decision")
+    by_id = {row.get("id"): row for row in facts}
+    linked = False
+    for decision in bundle.facts.get("decisions") or []:
+        if not isinstance(decision, dict) or decision.get("type") != "dispose":
+            continue
+        if decision.get("amount") not in (None,):
+            continue
+        support = by_id.get(decision.get("supports")) or {}
+        if support.get("field") == "dispose" and support.get("excerpt") and not support.get("kind"):
+            linked = True
     return _case(
         bundle,
-        "selling_has_transfer",
-        [] if linked else ["selling=true without a transfer on an account"],
-        "A disposal is a transfer fact on an account",
+        "selling_has_dispose",
+        [] if linked else ["selling=true without a supported disposal decision"],
+        "selling requires a supported disposal decision",
     )
 
 
@@ -590,7 +596,7 @@ def run_checks(bundles: list[ClientBundle]) -> list[CheckResult]:
         results.append(check_contingent_not_action(bundle))
         results.append(check_money_kinds_distinct(bundle))
         results.append(check_meeting_pounds_covered(bundle))
-        results.append(check_selling_has_transfer(bundle))
+        results.append(check_selling_has_dispose(bundle))
     return results
 
 

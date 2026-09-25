@@ -90,6 +90,8 @@ class ReportGenerator:
             renderer = RENDERERS.get(name)
             if renderer is None:
                 raise ValueError(f"No render function for placeholder {name!r}")
+            if name == "cgt_statement":
+                return render_cgt_statement(facts, case)
             return renderer(facts)
         if spec.is_actions():
             return self._recommendation_items(spec, case, instructions)

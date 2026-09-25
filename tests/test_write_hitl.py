@@ -139,6 +139,24 @@ def test_render_scope_and_fees_and_cgt() -> None:
     assert "0.5%" in fees
     assert "Initial charge" in fees
     assert "[REVIEW: CGT figure]" in render_cgt_statement(facts)
+    assert render_cgt_statement(facts).startswith("The disposal may create")
+    named = render_cgt_statement(
+        facts,
+        type("Case", (), {
+            "decisions": [
+                type("Decision", (), {
+                    "type": "dispose",
+                    "target_account_id": "H4-GIA-HJ",
+                    "amount": None,
+                })()
+            ],
+            "accounts": [
+                type("Account", (), {"account_id": "H4-GIA-HJ", "type": "General Investment Account"})()
+            ],
+        })(),
+    )
+    assert "H4-GIA-HJ (General Investment Account)" in named
+    assert "£" not in named.replace("[REVIEW: CGT figure]", "")
 
 
 def test_holdings_table_shows_conflict_and_null_review() -> None:

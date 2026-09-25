@@ -3,7 +3,7 @@
 import re
 from typing import Any
 
-from agent_pipeline.schema import Account, MoneyAvailability, ReconciledFacts, project_money
+from agent_pipeline.schema import Account, CaseDocument, MoneyAvailability, ReconciledFacts, project_money
 
 
 def format_money(value: Any) -> str:
@@ -223,11 +223,30 @@ def render_risk_profile_line(facts: list[Any]) -> str:
     return f"Your risk profile is {number}."
 
 
-def render_cgt_statement(_facts: ReconciledFacts) -> str:
-    return (
-        "The disposal may create a capital gains tax liability, which will be "
+def render_cgt_statement(_facts: ReconciledFacts, case: CaseDocument | None = None) -> str:
+    """Name a supported disposal when one exists. Otherwise keep the generic sentence."""
+    tail = (
+        "may create a capital gains tax liability, which will be "
         "assessed against the annual exempt amount. [REVIEW: CGT figure]"
     )
+    decision = next(
+        (
+            item
+            for item in (case.decisions if case is not None else [])
+            if item.type == "dispose" and item.target_account_id and item.amount is None
+        ),
+        None,
+    )
+    if decision is None:
+        return f"The disposal {tail}"
+    account = next(
+        (row for row in case.accounts if row.account_id == decision.target_account_id),
+        None,
+    )
+    label = decision.target_account_id
+    if account is not None and account.type:
+        label = f"{decision.target_account_id} ({account.type})"
+    return f"The disposal of {label} {tail}"
 
 
 def facts_context_block(facts: ReconciledFacts) -> str:

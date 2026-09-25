@@ -425,7 +425,7 @@ def test_case_invariants_ignore_review_quotes() -> None:
     from eval.checks import (
         check_contingent_not_action,
         check_meeting_pounds_covered,
-        check_selling_has_transfer,
+        check_selling_has_dispose,
     )
 
     facts = {
@@ -442,18 +442,42 @@ def test_case_invariants_ignore_review_quotes() -> None:
     assert not contingent.passed
     assert "contingent_proceeds" in contingent.evidence
     assert check_meeting_pounds_covered(bundle).passed
-    disposal = check_selling_has_transfer(bundle)
+    disposal = check_selling_has_dispose(bundle)
     assert not disposal.passed
     assert "selling=true" in disposal.evidence
-    covered = {
+    transfer_only = {
         "facts": [
             {"id": "f-selling", "field": "selling", "value": True},
             {"id": "f-gia", "field": "account_value", "kind": "transfer_amount", "account_id": "H-GIA-J", "value": 45000},
         ],
         "actions": [],
+        "decisions": [],
         "sources": [],
     }
-    assert check_selling_has_transfer(_bundle(facts=covered)).passed
+    assert not check_selling_has_dispose(_bundle(facts=transfer_only)).passed
+    supported = {
+        "facts": [
+            {"id": "f-selling", "field": "selling", "value": True},
+            {
+                "id": "f-dispose-h-gia-j",
+                "field": "dispose",
+                "kind": None,
+                "excerpt": "we agreed to disinvest a portion of the joint GIA",
+            },
+        ],
+        "actions": [],
+        "decisions": [
+            {
+                "id": "d-dispose-h-gia-j",
+                "type": "dispose",
+                "supports": "f-dispose-h-gia-j",
+                "target_account_id": "H-GIA-J",
+                "amount": None,
+            }
+        ],
+        "sources": [],
+    }
+    assert check_selling_has_dispose(_bundle(facts=supported)).passed
 
 
 def test_same_amount_cannot_be_two_flow_kinds() -> None:
