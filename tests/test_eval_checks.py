@@ -480,6 +480,56 @@ def test_case_invariants_ignore_review_quotes() -> None:
     assert check_selling_has_dispose(_bundle(facts=supported)).passed
 
 
+def test_meeting_pounds_require_a_money_fact(tmp_path: Path) -> None:
+    from eval.checks import check_meeting_pounds_covered
+
+    note = "Jean has received an inheritance of around £120,000, which has now cleared."
+    (tmp_path / "meeting_notes.md").write_text(note, encoding="utf-8")
+
+    def bundle(facts: dict) -> ClientBundle:
+        return _bundle(
+            data_dir=tmp_path,
+            facts={
+                "sources": [{"file": "meeting_notes.md", "role": "meeting", "status": "parsed"}],
+                **facts,
+            },
+        )
+    prose_only = bundle(
+        {
+            "facts": [
+                {
+                    "id": "f-circumstances",
+                    "field": "circumstances",
+                    "value": note,
+                    "kind": None,
+                },
+                {
+                    "id": "f-investment_amount",
+                    "field": "investment_amount",
+                    "kind": "transfer_amount",
+                    "value": "GBP 120,000 inheritance plus the full joint GIA value",
+                },
+            ]
+        }
+    )
+    missed = check_meeting_pounds_covered(prose_only)
+    assert not missed.passed
+    assert "120000" in missed.evidence
+    covered = bundle(
+        {
+            "facts": [
+                {
+                    "id": "f-received_proceeds",
+                    "field": "received_proceeds",
+                    "kind": "received_proceeds",
+                    "value": 120000,
+                }
+            ]
+        }
+    )
+    assert check_meeting_pounds_covered(covered).passed
+
+
 def test_same_amount_cannot_be_two_flow_kinds() -> None:
     from eval.checks import check_action_amount_numeric, check_money_kinds_distinct
 

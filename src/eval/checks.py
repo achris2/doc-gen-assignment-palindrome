@@ -531,11 +531,28 @@ def _meeting_text(bundle: ClientBundle) -> str:
     return read_file(path)
 
 
+_MONEY_KINDS = frozenset({
+    "account_balance",
+    "transfer_amount",
+    "received_proceeds",
+    "loan_repayment",
+    "contingent_proceeds",
+})
+_BARE_AMOUNT = re.compile(r"(?:gbp|£|\$)?\s*[\d,]+(?:\.\d+)?\s*", re.IGNORECASE)
+
+
 def _has_amount(facts: list[dict[str, Any]], amount: float) -> bool:
+    """True when a money fact's own value is this amount, not a sentence that mentions it."""
     for fact in facts:
-        number = _as_number(fact.get("value"))
-        if number is not None and abs(number - amount) <= 0.01:
-            return True
+        if fact.get("kind") not in _MONEY_KINDS and fact.get("field") != "account_value":
+            continue
+        value = fact.get("value")
+        number = _as_number(value)
+        if number is None or abs(number - amount) > 0.01:
+            continue
+        if isinstance(value, str) and not _BARE_AMOUNT.fullmatch(value.strip()):
+            continue
+        return True
     return False
 
 
