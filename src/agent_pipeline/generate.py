@@ -108,7 +108,8 @@ class ReportGenerator:
         payload = self._chat.complete(
             f"{_action_context(case.actions)}\n\n---\n\n{instructions}\n\n{spec.prompt}\n"
             'Return JSON {"items": [{"action_id": "...", "text": "..."}]}. '
-            "One item for every action id above. Do not choose which amount belongs to which action."
+            "One item for every action id above. Do not choose which amount belongs to which action.",
+            stage="recommendation",
         )
         text, stored = validate_recommendation_items(
             RecommendationDraft.from_payload(payload), case.actions
@@ -122,7 +123,8 @@ class ReportGenerator:
         payload = self._chat.complete(
             f"{_fact_context(case.facts_for(list(spec.facts) or None))}\n\n---\n\n"
             f"{instructions}\n\n{spec.prompt}\n"
-            'Return JSON {"text": "...", "fact_ids": ["f-..."]}.'
+            'Return JSON {"text": "...", "fact_ids": ["f-..."]}.',
+            stage=f"narrative:{name}",
         )
         draft = NarrativeDraft.from_payload(payload)
         if draft is None:

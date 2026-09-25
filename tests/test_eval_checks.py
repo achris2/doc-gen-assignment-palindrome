@@ -515,3 +515,12 @@ def test_discover_and_scorecard_on_repo_outputs() -> None:
     text = format_scorecard(results)
     assert "Eval scorecard" in text
     assert "|" in text
+
+
+def test_usage_estimate_is_separate_from_the_scorecard() -> None:
+    from eval.checks import estimate_usd
+
+    assert estimate_usd(
+        [{"model": "gpt-4o-mini", "prompt_tokens": 1_000_000, "cached_tokens": 200_000, "completion_tokens": 1_000_000}]
+    ) == round(800_000 / 1_000_000 * 0.15 + 200_000 / 1_000_000 * 0.075 + 0.60, 6)
+    assert estimate_usd([{"model": "unknown-model", "prompt_tokens": 10}]) is None

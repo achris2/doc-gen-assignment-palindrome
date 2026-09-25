@@ -94,7 +94,8 @@ def classify_unmatched_with_llm(
         lines.append(f"### {path.name}\n{body}")
 
     payload = JsonChat(openai_client, model).complete(
-        _LLM_CLASSIFY_PROMPT + "\n\nFiles:\n" + "\n\n".join(lines)
+        _LLM_CLASSIFY_PROMPT + "\n\nFiles:\n" + "\n\n".join(lines),
+        stage="classify",
     )
     if payload is None:
         return default

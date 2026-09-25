@@ -630,6 +630,62 @@ def format_eval(results: list[CheckResult]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+# USD per 1,000,000 tokens. An estimate, not an invoice.
+RATE_CARD_AS_OF = "2026-09-01"
+RATE_CARD = {
+    "gpt-4o-mini": {"prompt": 0.15, "cached": 0.075, "completion": 0.60},
+}
+
+
+def estimate_usd(calls: list[dict[str, Any]]) -> float | None:
+    total = 0.0
+    priced = False
+    for call in calls:
+        rates = RATE_CARD.get(str(call.get("model") or ""))
+        if rates is None:
+            continue
+        priced = True
+        prompt = int(call.get("prompt_tokens") or 0)
+        cached = int(call.get("cached_tokens") or 0)
+        completion = int(call.get("completion_tokens") or 0)
+        total += max(prompt - cached, 0) / 1_000_000 * rates["prompt"]
+        total += cached / 1_000_000 * rates["cached"]
+        total += completion / 1_000_000 * rates["completion"]
+    if not priced:
+        return None
+    return round(total, 6)
+
+
+def format_usage(outputs_dir: Path) -> str:
+    """A cost note beside the scorecard. It is not a check and does not change the exit code."""
+    files = sorted(outputs_dir.glob("*.usage.json"))
+    if not files:
+        return ""
+    lines = [
+        "## Usage",
+        "",
+        f"Estimated USD using the {RATE_CARD_AS_OF} rate card. Not a billing record.",
+        "",
+    ]
+    for path in files:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        calls = data.get("calls") or []
+        prompt = sum(int(call.get("prompt_tokens") or 0) for call in calls)
+        completion = sum(int(call.get("completion_tokens") or 0) for call in calls)
+        cost = estimate_usd(calls)
+        cost_text = "unpriced" if cost is None else f"${cost:.4f}"
+        lines.append(
+            f"- {path.name}: {len(calls)} calls, {prompt} prompt tokens, "
+            f"{completion} completion tokens, pipeline {data.get('pipeline_ms')} ms, {cost_text}"
+        )
+    if len(lines) == 4:
+        return ""
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def format_scorecard(results: list[CheckResult]) -> str:
     passed = sum(1 for r in results if r.passed)
     total = len(results)
@@ -869,7 +925,11 @@ def main() -> None:
     if args.scorecard is not None:
         eval_path = args.scorecard
     eval_path.parent.mkdir(parents=True, exist_ok=True)
-    eval_path.write_text(format_eval(results), encoding="utf-8")
+    text = format_eval(results)
+    usage = format_usage(args.outputs_dir)
+    if usage:
+        text = text.rstrip() + "\n\n" + usage
+    eval_path.write_text(text, encoding="utf-8")
     counts = question_counts(results)
     print(f"Wrote {eval_path}")
     for name in ("read", "facts", "section", "story", "case"):

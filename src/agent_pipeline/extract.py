@@ -476,7 +476,9 @@ def extract_meeting_decisions(
     """A separate call. Its rows cannot become money facts or recommendation actions."""
     accounts = known_accounts or []
     prompt = _MEETING_DECISION_PROMPT.format(known_accounts=_format_known_accounts(accounts))
-    payload = JsonChat(openai_client, model).complete(f"{prompt}\n\n---\n\n{text}", temperature=0)
+    payload = JsonChat(openai_client, model).complete(
+        f"{prompt}\n\n---\n\n{text}", temperature=0, stage="decisions"
+    )
     return meeting_decisions_from_payload(
         payload,
         source_file=source_file,
@@ -496,7 +498,9 @@ def extract_meeting_observations(
     accounts = known_accounts or []
     known_ids = {account.account_id for account in accounts}
     prompt = _MEETING_EXTRACT_PROMPT.format(known_accounts=_format_known_accounts(accounts))
-    payload = JsonChat(openai_client, model).complete(f"{prompt}\n\n---\n\n{text}", temperature=0)
+    payload = JsonChat(openai_client, model).complete(
+        f"{prompt}\n\n---\n\n{text}", temperature=0, stage="meeting"
+    )
     if not payload:
         return []
     extracted = MeetingExtract.from_payload(payload)
@@ -520,7 +524,8 @@ def _llm_structured_fallback(
     if openai_client is None or not model:
         return []
     payload = JsonChat(openai_client, model).complete(
-        f"{_STRUCTURED_FALLBACK_PROMPT}\n\n---\n\n{text}"
+        f"{_STRUCTURED_FALLBACK_PROMPT}\n\n---\n\n{text}",
+        stage="fallback",
     )
     if not payload:
         return []
