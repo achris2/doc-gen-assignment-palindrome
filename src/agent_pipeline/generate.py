@@ -14,6 +14,7 @@ from agent_pipeline.reconcile import validate_recommendation_items
 from agent_pipeline.render import (
     facts_context_block,
     render_cgt_statement,
+    render_decision_sentences,
     render_fees,
     render_material_context,
     render_risk_profile_line,
@@ -147,10 +148,14 @@ def _with_risk_profile(text: str, case: CaseDocument) -> str:
 
 
 def _with_context(text: str, case: CaseDocument) -> str:
+    parts = [text.rstrip()]
+    decisions = render_decision_sentences(case.decisions)
+    if decisions:
+        parts.append(decisions)
     extra = render_material_context(case.facts)
-    if not extra:
-        return text
-    return f"{text.rstrip()} {extra}"
+    if extra:
+        parts.append(extra)
+    return " ".join(part for part in parts if part)
 
 
 def _unfixed_recommendation(case: CaseDocument) -> str:

@@ -223,6 +223,31 @@ def render_risk_profile_line(facts: list[Any]) -> str:
     return f"Your risk profile is {number}."
 
 
+def render_decision_sentences(decisions: list[Any]) -> str:
+    """Dispose, retain, and confirm stay out of the action list. They are still part of the advice."""
+    sentences = []
+    for decision in decisions:
+        if getattr(decision, "type", None) not in {"dispose", "retain", "confirm"}:
+            continue
+        sentence = _decision_sentence(decision)
+        if sentence and sentence not in sentences:
+            sentences.append(sentence)
+    return " ".join(sentences)
+
+
+def _decision_sentence(decision: Any) -> str:
+    subject = str(getattr(decision, "subject", None) or "").strip().rstrip(".")
+    kind = decision.type
+    if kind == "confirm":
+        body = subject or "an outstanding point"
+        return f"Still to confirm: {body}."
+    if not subject:
+        subject = "proceed with a disposal" if kind == "dispose" else "leave the holding unchanged"
+    if subject[0].isupper():
+        subject = subject[0].lower() + subject[1:]
+    return f"We agreed to {subject}."
+
+
 def render_cgt_statement(_facts: ReconciledFacts, case: CaseDocument | None = None) -> str:
     """Name a supported disposal when one exists. Otherwise keep the generic sentence."""
     tail = (
@@ -246,7 +271,9 @@ def render_cgt_statement(_facts: ReconciledFacts, case: CaseDocument | None = No
     label = decision.target_account_id
     if account is not None and account.type:
         label = f"{decision.target_account_id} ({account.type})"
-    return f"The disposal of {label} {tail}"
+    subject = str(getattr(decision, "subject", None) or "").lower()
+    head = "A partial disposal" if "portion" in subject or "partial" in subject else "The disposal"
+    return f"{head} of {label} {tail}"
 
 
 def facts_context_block(facts: ReconciledFacts) -> str:

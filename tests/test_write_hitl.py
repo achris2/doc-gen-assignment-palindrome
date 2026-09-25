@@ -5,6 +5,7 @@ from agent_pipeline.reconcile import build_case_document, reconcile_observations
 from agent_pipeline.render import (
     account_in_scope,
     render_cgt_statement,
+    render_decision_sentences,
     render_fees,
     render_material_context,
     render_risk_profile_line,
@@ -159,7 +160,75 @@ def test_render_scope_and_fees_and_cgt() -> None:
         })(),
     )
     assert "H4-GIA-HJ (General Investment Account)" in named
+    assert named.startswith("The disposal of")
     assert "£" not in named.replace("[REVIEW: CGT figure]", "")
+    partial = render_cgt_statement(
+        facts,
+        type("Case", (), {
+            "decisions": [
+                type("Decision", (), {
+                    "type": "dispose",
+                    "target_account_id": "H4-GIA-HJ",
+                    "amount": None,
+                    "subject": "disinvest a portion of the Holloway joint GIA",
+                })()
+            ],
+            "accounts": [
+                type("Account", (), {"account_id": "H4-GIA-HJ", "type": "General Investment Account"})()
+            ],
+        })(),
+    )
+    assert partial.startswith("A partial disposal of H4-GIA-HJ")
+
+
+def test_decision_sentences_cover_dispose_retain_and_confirm() -> None:
+    from agent_pipeline.schema import MeetingDecision
+
+    case = build_case_document(
+        reconcile_observations(
+            [
+                _obs(
+                    "recommendation_summary",
+                    "use both ISA allowances and place the remainder in a new joint account",
+                    "meeting",
+                    source_file="meeting_notes.docx",
+                )
+            ]
+        ),
+        {},
+        meeting_decisions=[
+            MeetingDecision(
+                type="dispose",
+                status="agreed",
+                quote="we agreed to disinvest a portion of the Holloway joint GIA",
+                source_file="meeting_notes.docx",
+                subject="disinvest a portion of the Holloway joint GIA",
+                target_account_id="H4-GIA-HJ",
+            ),
+            MeetingDecision(
+                type="retain",
+                status="agreed",
+                quote="we agreed to leave the offshore bond as it is for now",
+                source_file="meeting_notes.docx",
+                subject="leave the offshore bond as it is for now",
+                target_account_id="M4-BOND-J",
+            ),
+            MeetingDecision(
+                type="confirm",
+                status="outstanding",
+                quote="we will confirm the cash balance before anything is finalised",
+                source_file="meeting_notes.docx",
+                subject="the outstanding cash balance",
+                target_account_id="H-CASH-JE",
+            ),
+        ],
+    )
+    text = render_decision_sentences(case.decisions)
+    assert "We agreed to disinvest a portion of the Holloway joint GIA." in text
+    assert "We agreed to leave the offshore bond as it is for now." in text
+    assert "Still to confirm: the outstanding cash balance." in text
+    assert "£" not in text
+    assert not any(decision.type in {"dispose", "retain", "confirm"} and decision.id.startswith("a-") for decision in case.decisions)
 
 
 def test_holdings_table_shows_conflict_and_null_review() -> None:
