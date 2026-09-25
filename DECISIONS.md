@@ -1,54 +1,176 @@
 # Decisions
 
-The starter dumped every file in the client folder into every section prompt. That is cheap to run and wrong for a suitability report: noise files dilute the case, the model invents fees and CGT, and a disagreement between the meeting and the custody snapshot has nowhere to go except the prose.
+The starter put every file in the client folder into every section prompt. That mixed client evidence with notes, images and noise, made the model repeatedly reinterpret the same case, and gave conflicting sources nowhere to go except the prose.
 
-The pipeline is now classify → extract → reconcile → write → footer. One model (`gpt-4o-mini`) plus deterministic rules. Runtime evidence is the request, the meeting note, and the custody file. `fde_notes.md` and `template_spec.md` are author-time only: the hierarchy they describe is encoded in code, and they are not ingested into `case_facts.json`.
+Final shape:
 
-## What changed
+**classify → extract → reconcile → write → human review**
 
-**Prompt-only fixes, still on the starter.** Global instructions, a static FCA line and risk warning, `[REVIEW]` instead of an estimated CGT or a guessed fee, tighter scope / background / recommendation prompts, and a constrained holdings table. These stopped the worst inventions. They did not stop the model re-reading the raw folder, so the next step was to take the folder out of the narrative prompts.
-
-**Classify, then extract.** Images are noise. JSON with a top-level `holders` key is the custody file. Everything else is one batched classification call; a failed call is noise. The request and the custody file are parsed in code. The meeting note is one structured call. Unknown account ids are dropped. Only the custody file creates account rows, so a meeting phrase cannot invent `joint_GIA` or `Holloway cash account`.
-
-**Reconcile in code.** Request fields come from the request, meeting narrative from the meeting, account identity from the database. A dated disagreement on a balance uses the newest value and keeps the other side. Values are not averaged. An undated disagreement stays open. Closed accounts leave the holdings table. Conflicts are shown in the table and again in the human-review footer, with file and quote. Body `[REVIEW]` tags are merged into that footer.
-
-**Write from the case, not the folder.** `config/template_config.json` still defines the document. `source: render` slots (scope, holdings, fees, CGT) are code. `source: llm` slots receive case facts and must cite fact ids. Tax Implications is included only when `selling` is true. Section gates are config (`always` or a fact equals a value), not a sentence the model is asked to interpret.
-
-**One case file per run.** `outputs/<client>/case_facts.json` holds sources, typed facts, recommendation actions, decisions, and the items each narrative slot returned. `--run <label>` writes `outputs/runs/<timestamp>-<label>/` and records model, config hash, and git revision, so a prompt change is a different run. The same directory can hold `<client>.usage.json` (calls, tokens, pipeline time).
-
-**Money is typed, and a recommendation is one action.** Kind stays on the source fact: `account_balance`, `transfer_amount`, `received_proceeds`, `loan_repayment`, `contingent_proceeds`. A meeting line about moving £20,000 is a transfer, not a new balance. Each non-balance money fact becomes one action with `amount` and `supports` (the fact id). The action has no kind. The recommendation slot returns one item per action id, and the amount check compares that sentence only with that action. A request `investment_amount` that equals exactly one transfer is corroboration on that action, not a second recommendation. The stored action summary is what the slot is given to phrase.
-
-**Eval is five counts, not one score.** Read (were the core files parsed and images skipped), Facts (id, source, excerpt, kind, conflict evidence), Section (FCA line, risk warning, one item per action, no £ in the background summary, body review tags in the footer), Story (tax section iff selling, table ids, conflicts surfaced), Case (only a numeric transfer becomes an action, a receipt or repayment does not, the same amount is not two flow kinds, every meeting £ amount is a fact value, and `selling` requires a disposal supported by its own quote). Counts are not averaged. Coherence stays a human note on the run. Early deterministic checks on the regenerated reports went from 22/28 (phantom rows, missing footer review, a pound figure in a background summary) to 28/28; separate counts replaced that single total. A background-prompt change that still scored full marks was discarded after a human read. A later money-rule change dropped circumstances and objectives on clients 2 and 4 while the checks still passed; that prompt was narrowed, and the reports to read are `outputs/submission`, generated after each recommendation is one bullet from the stored action. A Client 4 run was discarded when fact ids moved, because it could no longer test the recommendation wording.
-
-**Types after the behaviour settled.** Observations, accounts, the case file, the template, and model replies were dicts passed between stages. They are types in `schema.py`. Closed vocabularies (roles, fact fields, money kinds) are literals shared by classify, extract, and reconcile. `document_formatter/` still only reads files and assembles markdown. The case file later gained a `decisions` array. Each money kind is also projected to a role and an availability (`balance` / `movement` / `other`, and `available` / `unavailable` / `contingent`).
+One model (`gpt-4o-mini`) plus deterministic rules. Generation writes from a reconciled case, not the raw folder.
 
 ## Hardest calls
 
-- **Freshness plus a flag, never an average.** The draft uses the newest dated value. The other side stays visible for the adviser. Averaging two snapshots would hide the disagreement the report exists to surface.
-- **The model does not own identity, money, or fixed wording.** It classifies leftover files, extracts the meeting, and writes narrative. Code owns account ids, the holdings table, the FCA line, the risk warning, fee and CGT gaps, and which sections appear.
-- **Colleague notes are not evidence.** `fde_notes.md` is an incomplete earlier pass. Treating it as a source would let a scratch figure into the case.
-- **Kind belongs to the fact, not the action.** Two actions in one recommendation let a checker guess which sentence used which figure. One item per action id removes that guess. Collapsing a request amount onto a single matching transfer stops the same £20,000 being recommended twice.
-- **A decision is not an action.** Today's numeric transfer is one `transfer` decision. An unfixed recommendation is one `contribute` decision with no amount. Dispose, retain, and confirm come from a second meeting call. They are not actions. Their sentences are appended to the recommendation, and a subject already present in the action sentence is not repeated. A quote has to contain the decision's own verb, so a cash movement is not a retain. The verb `confirm` is wider than that: "I will confirm the charges in the report" still matches. `selling` does not create a disposal. Tax names the account only when a dispose decision has an account id; the section still appears from the selling flag. Received, repayment, and contingent amounts are rendered onto the recommendation from availability. A separate funding section was tried and removed. A known risk profile `N` or `N (words)` is one code sentence under the background summary. The larger-figure repayment rule is transitional: the cleaner production direction is for extraction to emit the receipt and the repayment as separate amounts.
-- **Circumstances stay a field when the sentence also has a figure.** A receipt is its own money observation. It does not replace `circumstances` or `objectives`. The background slot may write an objective only from an `objectives` fact. `risk_profile` is rendered separately and is not an objective.
-- **Do not average the eval.** A report can read the files and still tell the wrong story. Separate counts show which of those failed. An assertion suite cannot judge tone; that stays a note beside the run.
+* **Assume human review, so surface conflicts rather than manufacture certainty.**
+
+  * I treated this as a draft suitability-report workflow where an adviser/paraplanner reviews the output before use.
+  * Given that assumption, a visible disagreement is preferable to a confident but unsupported answer.
+  * If the meeting says £255k and the database says £240k, for example: 
+  * Dated snapshots: use the newer value and retain the other side for review.
+  * Undated / genuinely unresolved disagreement: leave the conflict open.
+  * The purpose of Human Review is not to make every warning disappear; it is to put the ambiguity in front of the person able to resolve it.
+
+* **No single golden source.**
+
+  * Source authority is field-specific:
+
+    * request → what the report should cover;
+    * custody / DB → account identity and system-held records;
+    * meeting → recent circumstances, objectives and intent.
+  * Account values are reconciled separately using dates and evidence.
+  * “Always trust the database” or “always trust the latest meeting” would both be wrong for some fields.
+
+* **The model does not own identity, money or fixed wording.**
+
+  * Code owns account ids, holdings rows, section gates, known values, fee / CGT gaps and fixed wording.
+  * The model handles ambiguous classification, meeting extraction and limited narrative.
+  * In this context, inventing an account, balance, fee, CGT figure or recommendation is a worse failure than flat prose.
+
+* **Money keeps its meaning; facts, actions and decisions stay separate.**
+
+  * The same £ figure can be a balance, transfer, receipt, repayment or contingent proceeds.
+  * Treating those as interchangeable caused some of the hardest regressions.
+  * Receipts / repayments / contingent proceeds remain facts.
+  * A supported numeric transfer can become an action.
+  * Dispose / retain / confirm / contribute are decisions and need their own evidence.
+  * Matching evidence corroborates an action; it should not create a second recommendation.
+  * If a recommendation is agreed but the amount is not, the amount stays unfixed rather than being invented.
+
+* **`selling` gates Tax Implications; it does not create a disposal.**
+
+  * An early eval linked selling to a transfer.
+  * The harder case showed that the relevant concept was a supported disposal decision, not necessarily a transfer.
+  * I changed the invariant rather than changing the pipeline to satisfy a bad test.
+  * The eval is code too; it can encode the wrong model of the problem.
+
+* **`fde_notes.md` and `template_spec.md` are not client evidence.**
+
+  * `fde_notes.md` is explicitly incomplete and should not be able to introduce a client fact.
+  * `template_spec.md` defines the report, not the client's circumstances.
+  * Useful rules are encoded in code/config rather than supplied as runtime evidence.
+  * other files proved to not necessarily be relevant and were excluded, which may make it less general / robust to different data 
+
+* **Deliberately exclude unsupported / multimodal sources for this exercise.**
+
+  * Images, platform statement screenshots, nested files and other unsupported formats are not treated as evidence.
+  * This makes the current pipeline more fragile: a material fact could exist only in one of those files.
+  * It was a deliberate scope choice. Without a clear production source contract, trying to support arbitrary files would add a lot of complexity and put more judgement back into the model.
+  * In production I would expect multimodal / document ingestion with explicit provenance, not silently ignoring those sources.
+
+* **Eval is several checks, not one score.**
+
+  * `read / facts / section / story / case` remain separate because a report can parse all the files correctly and still tell the wrong story.
+  * Checks target general invariants, not the four supplied clients.
+  * Examples: ids must resolve to evidence; conflicts keep both sides; receipts are not actions; recommendation amounts are supported; missing fees / CGT are not invented.
+  * At least one prompt change passed the deterministic checks but made the output worse on human inspection.
+  * The suite is regression protection, not proof that the narrative is good.
+
+## Approach that followed from those calls
+
+* **Kept `gpt-4o-mini`: cheap model, less model authority.**
+
+  * With limited API credits and repeated runs across four clients, cheap iteration mattered. Although newer, more powerful models could also help, that was a deliberate choice for this scope. 
+  * The accepted cost was weaker prose and weaker handling of ambiguous text.
+  * Rather than keep increasing context, I reduced the number of things the model was responsible for deciding.
+
+* **Prompt tuning first, architecture second.**
+
+  * I started with the simplest intervention: tighter prompts in `template_config.json`.
+  * That reduced obvious inventions around CGT, fees, recommendations and holdings.
+  * It did not fix the structural problem that every section was re-reading the same noisy folder.
+  * That led to the case representation and the classify → extract → reconcile → write flow.
+
+* **Extract once, reconcile once, write from the case.**
+
+  * Structured request / custody data is parsed in code where possible.
+  * Meeting notes are extracted into observations with provenance.
+  * Report generation receives reconciled case facts rather than raw documents.
+  * This reduces context, repeated interpretation and inconsistencies between sections.
+
+* **Only structured account evidence creates account rows.**
+
+  * Meeting text can add information about a known account but should not invent a new account identity.
+  * This directly addressed phantom rows from early runs.
+
+* **Make section inclusion deterministic where possible.**
+
+  * Tax Implications follows structured case state rather than asking the model whether tax “sounds relevant”.
+  * Section presence is easy to test and does not benefit from model variability.
+
+* **Types after behaviour settled.**
+
+  * Early dict-based structures made it faster to change the pipeline while I was still understanding the problem.
+  * Once the stage boundaries stabilised, dataclasses / literals made the contracts between stages clearer.
+  * I deliberately kept external ingestion looser; fitting a rigid schema to the four supplied clients would risk overfitting the held-out set.
+
+* **Keep runs reproducible.**
+
+  * Persist the reconciled case plus model / config / git metadata.
+  * Prompt and config changes then produce comparable runs rather than orphan markdown outputs.
 
 ## Limits
 
-Checks are assertions, not an LLM judge. They do not contain client names or figures.
-
-A meeting £20,000 on `H-CASH-01` can still be typed as a balance when the note meant a transfer. Flagging that as a value conflict is the conservative result. The extract label is what is imperfect.
-
-One file is kept per role. A second meeting, request, or custody file overwrites the first. Request labels are an allowlist of exact strings. Scope is a bag of type words (`isa`, `gia`, `sipp`, `pension`, `bond`, `cash`, `joint`). Status must be the string `closed`. Dates must be ISO. Amounts print as sterling. Subfolders are not opened. `data/synthetic/` probes these ties. The pipeline does not read that folder unless `--data-dir` points there. The prompts were not fitted to those folders. A later failure means changing the general rule the case probes.
+* One core file is retained for some roles; multiple meetings / requests / custody snapshots need proper chronology and reconciliation.
+* Unsupported images, PDFs / scans, nested files and other multimodal sources can contain evidence the current pipeline misses.
+* Request / custody parsing still assumes recognisable shapes before falling back to the model.
+* Date, account-status and currency handling are narrower than I would want in production.
+* Meeting money can still be mistyped; the conservative failure mode is to surface a conflict rather than silently choose a figure.
+* Deterministic evals cover known invariants, not global correctness, tone or suitability for sign-off.
 
 ## With more time
 
-- Read every file of a role, and keep a second meeting when the first was rejected.
-- Parse a request that is prose, or whose labels are not the eight known strings, instead of dropping the row.
-- Accept a custody file that is not a `holders` object, and more than one row for the same account id.
-- Parse non-ISO dates so a later figure is not treated as undated.
-- Scope by account id as well as type word. Treat dormant, frozen, and pending closure like closed when that is the intent.
-- Keep currency on the figure. Do not print a USD bond as pounds.
-- Open nested files. Leave images unread until there is a vision step, and say so.
-- Stop a reconstruction step from citing an account id or a figure that is not already on the evidence.
-- A stronger model as a compliance gate after the draft, still forbidden to invent a fee or a CGT figure.
-- Pairwise review of narrative, in CI, beside the assertion counts. Not instead of them.
+* **Push prompt tuning systematically.**
+
+  * Use the synthetic cases plus a much larger dataset to see how far narrative quality can be improved while treating factual-grounding checks as hard regressions.
+  * Version prompts, run them against the same cases and keep changes based on evidence rather than individual outputs.
+
+* **Add human-labelled ground truth.**
+
+  * Have advisers / paraplanners label facts, conflicts, actions, decisions and review items.
+  * This would let extraction and reconciliation be evaluated directly instead of judging everything through the final report.
+
+* **Add an LLM-judge layer, but keep deterministic evals.**
+
+  * Use it for dimensions that assertions cannot judge well: completeness, clarity and whether the output resembles a good suitability report / Consumer Duty-style communication.
+  * Calibrate it against human labels rather than treating the judge as ground truth.
+
+* **Define stricter schemas between stages.**
+
+  * Move towards Pydantic / JSON-schema contracts from unstructured evidence → observations → reconciled facts → actions / decisions → report.
+  * The aim is to stop malformed state propagating silently while keeping the ingestion boundary flexible enough for new source shapes.
+
+* **Run model bake-offs by task.**
+
+  * Compare newer / stronger models separately on extraction and narrative, including factual accuracy, quality, cost and latency.
+  * A stronger model may be worth paying for on difficult extraction or final narrative without replacing the cheaper model everywhere.
+
+* **Support multimodal evidence properly.**
+
+  * PDFs, scans, screenshots, spreadsheets and third-party platform statements should feed the same evidence model.
+  * Preserve page / table / cell / excerpt provenance so the reviewer can check material facts against the original source.
+
+* **Make provenance part of the review experience.**
+
+  * The pipeline already stores source evidence internally; expose that directly alongside material figures and recommendations.
+  * Ideally a reviewer can move from a report statement to the source that supports it.
+
+* **Turn Human Review into a workflow rather than a footer.**
+
+  * Review items should have type, evidence, severity and resolution state.
+  * Material conflicts should be explicitly resolved before the report is considered final.
+
+## Principle
+
+* Use the model where interpretation or language is useful.
+* Use code where the answer can be deterministic.
+* Keep material facts tied to evidence.
+* Given the assumed human-review step, surface uncertainty when the evidence does not support a confident answer.
