@@ -12,7 +12,6 @@ from document_formatter.formatting import format_document
 from agent_pipeline.llm import JsonChat
 from agent_pipeline.reconcile import validate_recommendation_items
 from agent_pipeline.render import (
-    facts_context_block,
     render_cgt_statement,
     render_decision_sentences,
     render_fees,
@@ -185,15 +184,3 @@ def _fact_context(facts: list[CaseFact]) -> str:
             f"source_file={fact.source_file!r} excerpt={fact.excerpt!r}"
         )
     return "\n".join(lines)
-
-
-def slot_context(case: CaseDocument, spec: PlaceholderSpec) -> str:
-    """Facts or actions for one placeholder. No raw source documents."""
-    if spec.is_actions():
-        return _action_context(case.actions)
-    return _fact_context(case.facts_for(list(spec.facts) or None))
-
-
-def build_narrative_context(facts: ReconciledFacts) -> str:
-    """Legacy full block. Narrative slots use slot_context instead."""
-    return facts_context_block(facts)

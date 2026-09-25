@@ -274,24 +274,3 @@ def render_cgt_statement(_facts: ReconciledFacts, case: CaseDocument | None = No
     subject = str(getattr(decision, "subject", None) or "").lower()
     head = "A partial disposal" if "portion" in subject or "partial" in subject else "The disposal"
     return f"{head} of {label} {tail}"
-
-
-def facts_context_block(facts: ReconciledFacts) -> str:
-    """Compact CASE FACTS block for narrative LLM prompts."""
-    lines = ["CASE FACTS (authoritative draft — do not invent beyond this):"]
-    lines.append(f"- selling: {facts.selling}")
-    for name, entry in sorted(facts.facts.items()):
-        flag = " [CONFLICT]" if entry.conflict else ""
-        lines.append(f"- {name}: {entry.value!r} (source={entry.source}){flag}")
-    for account in facts.accounts:
-        flag = " [CONFLICT]" if account.value_conflict else ""
-        lines.append(
-            f"- account {account.account_id}: type={account.type!r} "
-            f"owner={account.owner!r} value={account.value!r} "
-            f"as_of={account.as_of!r}{flag}"
-        )
-    if facts.conflicts:
-        lines.append("Conflicts:")
-        for conflict in facts.conflicts:
-            lines.append(f"- {conflict.field}: {conflict.details}")
-    return "\n".join(lines)
