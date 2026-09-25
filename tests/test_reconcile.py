@@ -213,6 +213,13 @@ def test_agreed_summary_without_a_figure_is_an_unfixed_action() -> None:
     assert action.amount_status == "not_agreed"
     assert action.supports == "f-recommendation_summary"
     assert "ISA" in str(action.summary)
+    assert len(case.decisions) == 1
+    decision = case.decisions[0]
+    assert decision.type == "contribute"
+    assert decision.status == "agreed"
+    assert decision.amount is None
+    assert decision.amount_status == "not_agreed"
+    assert decision.supports == action.supports
 
 
 def test_transfer_is_not_stored_as_account_balance() -> None:
@@ -276,6 +283,12 @@ def test_request_amount_corroborates_one_transfer() -> None:
     assert action.supports == transfer.id
     assert action.corroborated == request.id
     assert action.amount == 20000
+    assert len(case.decisions) == 1
+    assert case.decisions[0].type == "transfer"
+    assert case.decisions[0].status == "agreed"
+    assert case.decisions[0].amount == 20000
+    assert case.decisions[0].supports == transfer.id
+    assert "amount_status" not in case.decisions[0].to_dict()
 
 
 def test_request_amount_collapses_only_the_matching_transfer() -> None:

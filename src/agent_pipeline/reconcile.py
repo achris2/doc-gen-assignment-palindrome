@@ -7,6 +7,7 @@ import json
 import re
 
 from agent_pipeline.schema import (
+    Decision,
     DB_META_FIELDS,
     MEETING_FIELDS,
     MONEY_KINDS,
@@ -537,6 +538,41 @@ def _collapse_unambiguous_request_amount(
     return [action for index, action in enumerate(actions) if index not in drop]
 
 
+def build_decisions(
+    actions: list[RecommendationAction], case_facts: list[CaseFact]
+) -> list[Decision]:
+    """Copy today's actions. A numeric transfer stays one decision and blocks a summary decision."""
+    by_id = {fact.id: fact for fact in case_facts}
+    decisions: list[Decision] = []
+    for action in actions:
+        fact = by_id.get(action.supports)
+        if fact is not None and fact.kind == "transfer_amount" and _to_number(action.amount) is not None:
+            decisions.append(
+                Decision(
+                    id=f"d-transfer-{_slug(fact.id)}",
+                    type="transfer",
+                    status="agreed",
+                    supports=action.supports,
+                    subject=None if action.product in (None, "") else str(action.product),
+                    amount=action.amount,
+                )
+            )
+            continue
+        if action.amount is None and action.amount_status == "not_agreed":
+            decisions.append(
+                Decision(
+                    id="d-contribute-not-agreed",
+                    type="contribute",
+                    status="agreed",
+                    supports=action.supports,
+                    subject=None if not str(action.summary or "").strip() else str(action.summary),
+                    amount=None,
+                    amount_status="not_agreed",
+                )
+            )
+    return decisions
+
+
 def sources_from_classifications(classifications: dict[str, FileRole]) -> list[SourceRecord]:
     image = {".png", ".jpg", ".jpeg"}
     rows = []
@@ -554,11 +590,13 @@ def build_case_document(
 ) -> CaseDocument:
     """One case file: sources, typed facts with evidence, and joined actions."""
     case_facts = [case_fact_from_recorded(item) for item in reconciled.recorded]
+    actions = build_actions(case_facts, reconciled)
     return CaseDocument(
         run=run,
         sources=sources_from_classifications(classifications or {}),
         facts=case_facts,
-        actions=build_actions(case_facts, reconciled),
+        actions=actions,
+        decisions=build_decisions(actions, case_facts),
         sections={},
         selling=reconciled.selling,
         conflicts=list(reconciled.conflicts),

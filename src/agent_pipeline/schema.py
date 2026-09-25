@@ -508,6 +508,41 @@ class CaseFact:
         }
 
 
+DecisionType = Literal["contribute", "transfer", "dispose", "retain", "confirm"]
+DecisionStatus = Literal["agreed", "outstanding"]
+
+
+@dataclass
+class Decision:
+    """A choice recorded from evidence. It is not a money kind and not a recommendation action."""
+
+    id: str
+    type: DecisionType
+    status: DecisionStatus
+    supports: str
+    target_account_id: str | None = None
+    subject: str | None = None
+    amount: Any = None
+    amount_status: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "id": self.id,
+            "type": self.type,
+            "status": self.status,
+            "supports": self.supports,
+        }
+        if self.target_account_id:
+            data["target_account_id"] = self.target_account_id
+        if self.subject:
+            data["subject"] = self.subject
+        if self.amount is not None or self.amount_status == "not_agreed":
+            data["amount"] = self.amount
+        if self.amount_status and self.amount_status != "agreed":
+            data["amount_status"] = self.amount_status
+        return data
+
+
 @dataclass
 class RecommendationAction:
     """One recommendation. amount is the figure to write; it is not a money kind."""
@@ -650,6 +685,7 @@ class CaseDocument:
     sources: list[SourceRecord]
     facts: list[CaseFact]
     actions: list[RecommendationAction]
+    decisions: list[Decision]
     sections: dict[str, NarrativeCitation | RecommendationSection]
     selling: bool | None
     conflicts: list[Conflict]
@@ -674,6 +710,7 @@ class CaseDocument:
             "sources": [row.to_dict() for row in self.sources],
             "facts": [fact.to_dict() for fact in self.facts],
             "actions": [action.to_dict() for action in self.actions],
+            "decisions": [decision.to_dict() for decision in self.decisions],
             "sections": {name: section.to_dict() for name, section in self.sections.items()},
             "selling": self.selling,
             "conflicts": [conflict.to_dict() for conflict in self.conflicts],
