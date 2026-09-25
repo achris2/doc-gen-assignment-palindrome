@@ -11,7 +11,14 @@ from agent_pipeline.render import (
     render_scope,
     resolve_scoped_accounts,
 )
-from agent_pipeline.schema import Account, Observation, ReconciledFacts, SectionSpec, SourcedValue
+from agent_pipeline.schema import (
+    Account,
+    Observation,
+    ReconciledFacts,
+    SectionSpec,
+    SourcedValue,
+    project_money,
+)
 
 
 def _obs(field, value, role, *, source_file, account_id=None, as_of=None):
@@ -23,6 +30,35 @@ def _obs(field, value, role, *, source_file, account_id=None, as_of=None):
         account_id=account_id,
         as_of=as_of,
     )
+
+
+def test_money_projection_keeps_balances_and_movements_out_of_context() -> None:
+    assert (project_money("account_balance").role, project_money("account_balance").availability) == (
+        "balance",
+        "unknown",
+    )
+    assert (project_money("transfer_amount").role, project_money("transfer_amount").availability) == (
+        "movement",
+        "unknown",
+    )
+    assert (project_money("received_proceeds").role, project_money("received_proceeds").availability) == (
+        "other",
+        "available",
+    )
+    assert (project_money("loan_repayment").role, project_money("loan_repayment").availability) == (
+        "other",
+        "unavailable",
+    )
+    assert (project_money("contingent_proceeds").role, project_money("contingent_proceeds").availability) == (
+        "other",
+        "contingent",
+    )
+    balance = _obs("account_value", 52000, "db", source_file="db.json", account_id="H-ISA-01")
+    balance.kind = "account_balance"
+    transfer = _obs("investment_amount", 20000, "meeting", source_file="meeting.docx", account_id="H-CASH-01")
+    transfer.kind = "transfer_amount"
+    case = build_case_document(reconcile_observations([balance, transfer]), {})
+    assert render_material_context(case.facts) == ""
 
 
 def test_context_paragraph_links_a_repayment_to_its_pool() -> None:

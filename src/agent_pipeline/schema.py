@@ -22,6 +22,9 @@ MoneyKind = Literal[
     "loan_repayment",
     "contingent_proceeds",
 ]
+# A view over a money kind. Extraction still stores the kind.
+MoneyRole = Literal["balance", "movement", "other"]
+MoneyAvailability = Literal["available", "unavailable", "contingent", "unknown"]
 # Who fills a <<slot>> in the template: fixed code, or the model.
 SlotSource = Literal["render", "llm"]
 # The recommendation slot is given the actions, not the raw facts.
@@ -59,6 +62,32 @@ FactField = RequestField | MeetingField | DbMetaField | DbField
 CORE_ROLES: frozenset[SourceRole] = frozenset(get_args(SourceRole))
 FILE_ROLES: frozenset[FileRole] = frozenset(get_args(FileRole))
 MONEY_KINDS: frozenset[MoneyKind] = frozenset(get_args(MoneyKind))
+MONEY_ROLES: frozenset[MoneyRole] = frozenset(get_args(MoneyRole))
+MONEY_AVAILABILITY: frozenset[MoneyAvailability] = frozenset(get_args(MoneyAvailability))
+
+
+@dataclass(frozen=True)
+class MoneyView:
+    """Role and availability projected from a stored money kind."""
+
+    role: MoneyRole
+    availability: MoneyAvailability
+
+
+_MONEY_VIEWS: dict[MoneyKind, MoneyView] = {
+    "account_balance": MoneyView("balance", "unknown"),
+    "transfer_amount": MoneyView("movement", "unknown"),
+    "received_proceeds": MoneyView("other", "available"),
+    "loan_repayment": MoneyView("other", "unavailable"),
+    "contingent_proceeds": MoneyView("other", "contingent"),
+}
+
+
+def project_money(kind: MoneyKind | None) -> MoneyView | None:
+    """Map a stored kind onto role and availability. Unknown kinds stay unprojected."""
+    if kind not in _MONEY_VIEWS:
+        return None
+    return _MONEY_VIEWS[kind]
 REQUEST_FIELDS: frozenset[RequestField] = frozenset(get_args(RequestField))
 MEETING_FIELDS: frozenset[MeetingField] = frozenset(get_args(MeetingField))
 ACCOUNT_ATTRS: frozenset[AccountAttr] = frozenset(get_args(AccountAttr))

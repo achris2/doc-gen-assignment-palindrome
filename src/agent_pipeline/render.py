@@ -3,7 +3,7 @@
 import re
 from typing import Any
 
-from agent_pipeline.schema import Account, ReconciledFacts
+from agent_pipeline.schema import Account, MoneyAvailability, ReconciledFacts, project_money
 
 
 def format_money(value: Any) -> str:
@@ -137,11 +137,13 @@ def render_fees(facts: ReconciledFacts) -> str:
     return "\n".join(lines)
 
 
-def _money_facts(facts: list[Any], kind: str) -> list[Any]:
+def _money_facts(facts: list[Any], availability: MoneyAvailability) -> list[Any]:
+    """Facts whose projected availability matches. Balances and movements stay out."""
     found = []
     seen: set[float] = set()
     for fact in facts:
-        if getattr(fact, "kind", None) != kind:
+        view = project_money(getattr(fact, "kind", None))
+        if view is None or view.availability != availability:
             continue
         number = fact.value if isinstance(fact.value, (int, float)) else None
         if number is None or float(number) in seen:
@@ -174,9 +176,9 @@ def _source_noun(excerpt: str) -> str:
 
 def render_material_context(facts: list[Any]) -> str:
     """Non-action money that changes what can be invested. No raw quote."""
-    received = _money_facts(facts, "received_proceeds")
-    repayments = _money_facts(facts, "loan_repayment")
-    contingent = _money_facts(facts, "contingent_proceeds")
+    received = _money_facts(facts, "available")
+    repayments = _money_facts(facts, "unavailable")
+    contingent = _money_facts(facts, "contingent")
     if not received and not repayments and not contingent:
         return ""
     sentences = []
