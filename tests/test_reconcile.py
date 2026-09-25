@@ -156,7 +156,51 @@ def test_phantom_meeting_account_id_does_not_create_row() -> None:
     ids = {a.account_id for a in facts.accounts}
     assert "joint_GIA" not in ids
     assert "H-GIA-J" in ids
-    assert any("unmatched figure" in item for item in facts.review_items)
+    assert not any("unmatched figure" in item for item in facts.review_items)
+    assert facts.facts["money_amount_45000"].value == 45000
+    assert facts.facts["money_amount_20000"].value == 20000
+
+
+def test_kind_is_not_copied_onto_every_amount_in_a_quote() -> None:
+    obs = _obs(
+        "account_value",
+        "£200,000 of the £850,000 is already committed to repaying a bridging loan",
+        "meeting",
+    )
+    obs.kind = "loan_repayment"
+    obs.quote = obs.value
+    case = build_case_document(reconcile_observations([obs]), {})
+    kinds = {(fact.value, fact.kind) for fact in case.facts}
+    assert (200000, None) in kinds or (200000.0, None) in kinds
+    assert (850000, None) in kinds or (850000.0, None) in kinds
+    assert not any(fact.kind == "loan_repayment" for fact in case.facts)
+    assert case.actions == []
+
+
+def test_phrase_and_receipt_do_not_become_actions() -> None:
+    request = _obs("investment_amount", "Proceeds from the recent business sale (see meeting notes)", "request")
+    request.kind = "transfer_amount"
+    received = _obs("received_proceeds", 850000, "meeting")
+    received.kind = "received_proceeds"
+    repayment = _obs("loan_repayment", 200000, "meeting")
+    repayment.kind = "loan_repayment"
+    case = build_case_document(reconcile_observations([request, received, repayment]), {})
+    assert case.actions == []
+
+
+def test_agreed_summary_without_a_figure_is_an_unfixed_action() -> None:
+    summary = _obs(
+        "recommendation_summary",
+        "Use both ISA allowances, contribute to both SIPPs, add to the joint GIA, and place the remainder in a new joint account.",
+        "meeting",
+    )
+    case = build_case_document(reconcile_observations([summary]), {})
+    assert len(case.actions) == 1
+    action = case.actions[0]
+    assert action.amount is None
+    assert action.amount_status == "not_agreed"
+    assert action.supports == "f-recommendation_summary"
+    assert "ISA" in str(action.summary)
 
 
 def test_transfer_is_not_stored_as_account_balance() -> None:

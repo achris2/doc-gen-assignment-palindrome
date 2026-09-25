@@ -491,11 +491,12 @@ class RecommendationAction:
     source_of_funds: Any
     summary: Any
     corroborated: str | None = None
+    amount_status: str = "agreed"
 
     def line(self) -> str:
         return (
-            f"- id={self.id} amount={self.amount!r} who={self.who!r} "
-            f"product={self.product!r} source_of_funds={self.source_of_funds!r} "
+            f"- id={self.id} amount={self.amount!r} amount_status={self.amount_status!r} "
+            f"who={self.who!r} product={self.product!r} source_of_funds={self.source_of_funds!r} "
             f"summary={self.summary!r} supports={self.supports!r}"
         )
 
@@ -511,6 +512,8 @@ class RecommendationAction:
         }
         if self.corroborated is not None:
             data["corroborated"] = self.corroborated
+        if self.amount_status != "agreed":
+            data["amount_status"] = self.amount_status
         return data
 
 

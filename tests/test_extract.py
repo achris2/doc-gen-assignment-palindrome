@@ -205,6 +205,40 @@ def test_extract_meeting_uses_llm_and_provenance() -> None:
     assert by_field["account_value"].as_of == "2026-05-14"
 
 
+def test_narrative_field_drops_money_kind() -> None:
+    client = _mock_llm(
+        {
+            "meeting_date": "2026-05-12",
+            "observations": [
+                {
+                    "field": "recommendation_summary",
+                    "value": "Move £20,000 from the cash account into the ISA",
+                    "kind": "transfer_amount",
+                    "account_id": None,
+                    "as_of": None,
+                },
+                {
+                    "field": "account_value",
+                    "value": 20000,
+                    "kind": "transfer_amount",
+                    "account_id": "H-CASH-01",
+                    "as_of": None,
+                },
+            ],
+        }
+    )
+    obs = extract_meeting_observations(
+        "Move £20,000 from the cash account into the ISA.",
+        "meeting_notes.docx",
+        openai_client=client,
+        model="test",
+        known_accounts=[],
+    )
+    by_field = {o.field: o for o in obs}
+    assert by_field["recommendation_summary"].kind is None
+    assert by_field["account_value"].kind == "transfer_amount"
+
+
 def test_extract_observations_composes_typed_sources(tmp_path: Path) -> None:
     db_path = tmp_path / "db.json"
     db_path.write_text(

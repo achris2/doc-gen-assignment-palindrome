@@ -68,11 +68,19 @@ Rules:
   invested, or withdrawn. Use account_balance only for a stated balance. Use received_proceeds,
   loan_repayment, or contingent_proceeds when those are what the note describes. Never label a
   transfer as account_balance.
+- Every £ amount is its own observation. value is that number only, with one kind.
+  A second amount in the same sentence is a second observation. Do not give both amounts the same kind
+  unless the note applies that kind to each of them. Money received is received_proceeds. Money
+  already committed to a repayment is loan_repayment. Money that is contingent or not guaranteed
+  is contingent_proceeds and is not a transfer.
 - approximate is true when the note uses hedging language (around, about, a little over, etc.).
 - Prefer the meeting_date for as_of on meeting figures when a specific date is not given.
 - Do not invent fees, tax figures, or amounts not in the note.
 - Omit empty observations.
 """
+
+
+_NARRATIVE_FIELDS = frozenset({"circumstances", "objectives", "recommendation_summary"})
 
 
 _STRUCTURED_FALLBACK_PROMPT = """\
@@ -330,6 +338,8 @@ def _observations_from_extract(
         if account_id is not None and known_account_ids is not None and account_id not in known_account_ids:
             account_id = None
         kind = item.kind if item.kind in MONEY_KINDS else None
+        if item.field in _NARRATIVE_FIELDS:
+            kind = None
         out.append(
             observation(
                 field=item.field,

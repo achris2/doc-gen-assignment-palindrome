@@ -168,8 +168,8 @@ def _sourced(
 def reconcile_observations(observations: list[Observation]) -> ReconciledFacts:
     """Collapse observations into draft facts; never drop conflicting evidence.
 
-    Only ``db`` observations create account shells. Non-db account figures that
-    do not match an existing db id become unmatched REVIEW items (no phantoms).
+    Only ``db`` observations create account shells. A figure with no custody id
+    is kept as a numeric fact and does not create an account.
     """
     accounts: dict[str, Account] = {}
     for obs in observations:
@@ -187,7 +187,7 @@ def reconcile_observations(observations: list[Observation]) -> ReconciledFacts:
         if obs.source_role == "db" or (obs.account_id and obs.account_id in db_ids):
             filtered.append(obs)
             continue
-        review_items.append(f"[REVIEW: unmatched figure: {obs.quote or obs.value}]")
+        filtered.extend(_unscoped_money(obs))
 
     groups: dict[tuple[str, str | None, str | None], list[Observation]] = {}
     for obs in filtered:
@@ -384,8 +384,48 @@ def action_id_for(action_type: str, owner_or_product: str) -> str:
     return f"a-{_slug(action_type)}-{_slug(owner_or_product)}"
 
 
+_ACTION_KINDS = frozenset({"transfer_amount", "received_proceeds", "loan_repayment"})
+_KEPT_KINDS = _ACTION_KINDS | {"contingent_proceeds"}
+
+
+def _distinct_amounts(obs: Observation) -> list[float]:
+    found: list[float] = []
+    number = _to_number(obs.value)
+    if number is not None:
+        found.append(number)
+    for amount in pound_amounts(f"{obs.value or ''} {obs.quote or ''}"):
+        if all(values_materially_differ(amount, seen) for seen in found):
+            found.append(amount)
+    return found
+
+
+def _unscoped_money(obs: Observation) -> list[Observation]:
+    """One numeric fact per amount. A kind applies only to the observation's own number."""
+    kind = obs.kind if obs.kind in _KEPT_KINDS else None
+    stated = _to_number(obs.value)
+    kept = []
+    for amount in _distinct_amounts(obs):
+        amount_kind = kind if stated is not None and not values_materially_differ(amount, stated) else None
+        slug = str(int(amount)) if amount == int(amount) else str(amount)
+        field = f"{amount_kind or 'money_amount'}_{slug}"
+        kept.append(
+            Observation(
+                field=field,
+                value=amount,
+                source_role=obs.source_role,
+                source_file=obs.source_file,
+                as_of=obs.as_of,
+                account_id=None,
+                quote=obs.quote,
+                approximate=obs.approximate,
+                kind=amount_kind,
+            )
+        )
+    return kept
+
+
 def build_actions(case_facts: list[CaseFact], reconciled: ReconciledFacts) -> list[RecommendationAction]:
-    """One joined action per non-balance money fact. Amount is not a kind."""
+    """One action per numeric transfer. A receipt or repayment stays a fact."""
     by_id = {fact.id: fact for fact in case_facts}
     product = reconciled.fact_value("product", default=None)
     owner = reconciled.fact_value("ownership", default=None)
@@ -412,12 +452,29 @@ def build_actions(case_facts: list[CaseFact], reconciled: ReconciledFacts) -> li
         )
 
     for fact in case_facts:
-        if fact.kind in MONEY_KINDS and fact.kind != "account_balance":
-            who = str(product or fact.account_id or owner or "client")
-            add(fact, "fund" if product else "move", who)
-    if not actions and "f-investment_amount" in by_id:
-        add(by_id["f-investment_amount"], "fund", str(product or owner or "client"))
-    return _collapse_unambiguous_request_amount(actions, by_id)
+        if fact.kind != "transfer_amount" or _to_number(fact.value) is None:
+            continue
+        who = str(fact.account_id or product or owner or "client")
+        add(fact, "fund" if product else "move", who)
+    actions = _collapse_unambiguous_request_amount(actions, by_id)
+    if actions:
+        return actions
+    summary_fact = next((fact for fact in case_facts if fact.field == "recommendation_summary"), None)
+    if summary_fact is None or not str(summary_fact.value or "").strip() or summary_fact.kind:
+        return actions
+    actions.append(
+        RecommendationAction(
+            id=action_id_for("contribute", "not-agreed"),
+            amount=None,
+            supports=summary_fact.id,
+            who=str(product or owner or "client"),
+            product=product,
+            source_of_funds=source,
+            summary=summary_fact.value,
+            amount_status="not_agreed",
+        )
+    )
+    return actions
 
 
 def _collapse_unambiguous_request_amount(
