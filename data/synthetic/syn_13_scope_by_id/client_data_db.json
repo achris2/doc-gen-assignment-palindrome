@@ -1,0 +1,40 @@
+{
+  "snapshot_date": "2026-06-15",
+  "holders": {
+    "client": {
+      "name": "Pauline Cho",
+      "accounts": [
+        {
+          "account_id": "ACC-1001",
+          "platform": "Westmill",
+          "type": "Stocks & Shares ISA",
+          "owner": "Pauline Cho",
+          "status": "open",
+          "value": 15000,
+          "currency": "GBP",
+          "valuation_date": "2026-06-15"
+        },
+        {
+          "account_id": "ACC-1002",
+          "platform": "Westmill",
+          "type": "General Investment Account",
+          "owner": "Pauline Cho",
+          "status": "open",
+          "value": 64000,
+          "currency": "GBP",
+          "valuation_date": "2026-06-15"
+        },
+        {
+          "account_id": "ACC-1003",
+          "platform": "Westmill",
+          "type": "SIPP",
+          "owner": "Pauline Cho",
+          "status": "open",
+          "value": 300000,
+          "currency": "GBP",
+          "valuation_date": "2026-06-15"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "snapshot_date": "2026-08-01",
+  "holders": {
+    "client": {
+      "name": "Greta Holm",
+      "accounts": [
+        {
+          "account_id": "PF-ISA-G",
+          "platform": "Pinfold",
+          "type": "Stocks & Shares ISA",
+          "owner": "Greta Holm",
+          "status": "open",
+          "value": 33000,
+          "currency": "GBP",
+          "valuation_date": "2026-08-01"
+        },
+        {
+          "account_id": "PF-CASH-G",
+          "platform": "Pinfold",
+          "type": "Cash Account",
+          "owner": "Greta Holm",
+          "status": "open",
+          "value": null,
+          "currency": "GBP",
+          "valuation_date": null
+        },
+        {
+          "account_id": "PF-OLD-G",
+          "platform": "Pinfold",
+          "type": "Cash Account",
+          "owner": "Greta Holm",
+          "status": "closed",
+          "value": 0,
+          "currency": "GBP",
+          "valuation_date": "2025-09-01"
+        }
+      ]
+    }
+  }
+}

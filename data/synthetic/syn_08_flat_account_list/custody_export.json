@@ -1,0 +1,36 @@
+{
+  "as_of": "2026-09-01",
+  "household": "Adeyemi",
+  "accounts": [
+    {
+      "account_id": "QT-ISA-A",
+      "platform": "Quay",
+      "type": "Stocks & Shares ISA",
+      "owner": "Amina Adeyemi",
+      "status": "open",
+      "value": 50500,
+      "currency": "GBP",
+      "valuation_date": "2026-09-01"
+    },
+    {
+      "account_id": "QT-ISA-K",
+      "platform": "Quay",
+      "type": "Stocks & Shares ISA",
+      "owner": "Kofi Adeyemi",
+      "status": "open",
+      "value": 47200,
+      "currency": "GBP",
+      "valuation_date": "2026-09-01"
+    },
+    {
+      "account_id": "QT-GIA-J",
+      "platform": "Quay",
+      "type": "General Investment Account",
+      "owner": "Joint",
+      "status": "open",
+      "value": 88000,
+      "currency": "GBP",
+      "valuation_date": "2026-06-01"
+    }
+  ]
+}

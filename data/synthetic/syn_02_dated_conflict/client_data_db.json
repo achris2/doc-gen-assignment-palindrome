@@ -1,0 +1,55 @@
+{
+  "snapshot_date": "2026-05-31",
+  "holders": {
+    "client": {
+      "name": "Owen Blake",
+      "accounts": [
+        {
+          "account_id": "RB-ISA-O",
+          "platform": "Redbridge",
+          "type": "Stocks & Shares ISA",
+          "owner": "Owen Blake",
+          "status": "open",
+          "value": 54000,
+          "currency": "GBP",
+          "valuation_date": "2026-05-31"
+        },
+        {
+          "account_id": "RB-GIA-J",
+          "platform": "Redbridge",
+          "type": "General Investment Account",
+          "owner": "Joint",
+          "status": "open",
+          "value": 67200,
+          "currency": "GBP",
+          "valuation_date": "2026-04-12"
+        }
+      ]
+    },
+    "partner": {
+      "name": "Leah Blake",
+      "accounts": [
+        {
+          "account_id": "RB-ISA-L",
+          "platform": "Redbridge",
+          "type": "Stocks & Shares ISA",
+          "owner": "Leah Blake",
+          "status": "open",
+          "value": 49300,
+          "currency": "GBP",
+          "valuation_date": "2026-05-31"
+        },
+        {
+          "account_id": "RB-GIA-J",
+          "platform": "Redbridge",
+          "type": "General Investment Account",
+          "owner": "Joint",
+          "status": "open",
+          "value": 67200,
+          "currency": "GBP",
+          "valuation_date": "2026-04-12"
+        }
+      ]
+    }
+  }
+}

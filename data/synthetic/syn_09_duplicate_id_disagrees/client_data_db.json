@@ -1,0 +1,45 @@
+{
+  "snapshot_date": "2026-05-01",
+  "holders": {
+    "client": {
+      "name": "Ruth Ellison",
+      "accounts": [
+        {
+          "account_id": "LN-GIA-J",
+          "platform": "Linden",
+          "type": "General Investment Account",
+          "owner": "Joint",
+          "status": "open",
+          "value": 150000,
+          "currency": "GBP",
+          "valuation_date": "2026-05-01"
+        }
+      ]
+    },
+    "partner": {
+      "name": "Mark Ellison",
+      "accounts": [
+        {
+          "account_id": "LN-GIA-J",
+          "platform": "Linden",
+          "type": "General Investment Account",
+          "owner": "Joint",
+          "status": "open",
+          "value": 150250,
+          "currency": "GBP",
+          "valuation_date": "2026-05-02"
+        },
+        {
+          "account_id": "LN-ISA-M",
+          "platform": "Linden",
+          "type": "Stocks & Shares ISA",
+          "owner": "Mark Ellison",
+          "status": "open",
+          "value": 30000,
+          "currency": "GBP",
+          "valuation_date": "2026-05-01"
+        }
+      ]
+    }
+  }
+}

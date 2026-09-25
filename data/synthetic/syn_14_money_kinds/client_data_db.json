@@ -1,0 +1,40 @@
+{
+  "snapshot_date": "2026-04-30",
+  "holders": {
+    "client": {
+      "name": "Victor Lang",
+      "accounts": [
+        {
+          "account_id": "MD-ISA-V",
+          "platform": "Meadow",
+          "type": "Stocks & Shares ISA",
+          "owner": "Victor Lang",
+          "status": "open",
+          "value": 36000,
+          "currency": "GBP",
+          "valuation_date": "2026-04-30"
+        },
+        {
+          "account_id": "MD-CASH-V",
+          "platform": "Meadow",
+          "type": "Cash Account",
+          "owner": "Victor Lang",
+          "status": "open",
+          "value": 74000,
+          "currency": "GBP",
+          "valuation_date": "2026-04-30"
+        },
+        {
+          "account_id": "MD-GIA-V",
+          "platform": "Meadow",
+          "type": "General Investment Account",
+          "owner": "Victor Lang",
+          "status": "open",
+          "value": 50000,
+          "currency": "GBP",
+          "valuation_date": "2026-04-30"
+        }
+      ]
+    }
+  }
+}

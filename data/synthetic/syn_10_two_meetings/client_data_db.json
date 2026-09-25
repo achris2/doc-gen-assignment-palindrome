@@ -1,0 +1,20 @@
+{
+  "snapshot_date": "2026-01-31",
+  "holders": {
+    "client": {
+      "name": "Elena Voss",
+      "accounts": [
+        {
+          "account_id": "BR-ISA-E",
+          "platform": "Bramley",
+          "type": "Stocks & Shares ISA",
+          "owner": "Elena Voss",
+          "status": "open",
+          "value": 40000,
+          "currency": "GBP",
+          "valuation_date": "2026-01-31"
+        }
+      ]
+    }
+  }
+}

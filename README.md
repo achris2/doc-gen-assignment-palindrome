@@ -72,7 +72,7 @@ Offline. Live model calls are mocked.
 
 ## Synthetic cases
 
-`data/synthetic/generate.py` writes `syn_*` folders: same report themes, different people, figures, and file shapes. The pipeline does not read them unless `--data-dir` points there. `data/synthetic/FRAGILITIES.md` lists where the code is tied to the example clients.
+`data/synthetic/generate.py` writes `syn_*` folders: same report themes, different people, figures, and file shapes. The pipeline does not read them unless `--data-dir` points there. The prompts were not fitted to these folders. A failure means changing the general rule that case probes.
 
 ## Other notes
 

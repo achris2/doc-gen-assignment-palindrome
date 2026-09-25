@@ -1,0 +1,20 @@
+{
+  "snapshot_date": "30/06/2026",
+  "holders": {
+    "client": {
+      "name": "Ben Okoye",
+      "accounts": [
+        {
+          "account_id": "HL-GIA-B",
+          "platform": "Harrow",
+          "type": "General Investment Account",
+          "owner": "Ben Okoye",
+          "status": "open",
+          "value": 25500,
+          "currency": "GBP",
+          "valuation_date": "30/06/2026"
+        }
+      ]
+    }
+  }
+}

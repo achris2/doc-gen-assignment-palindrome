@@ -1,0 +1,20 @@
+{
+  "snapshot_date": "2026-04-01",
+  "holders": {
+    "client": {
+      "name": "Jonah Berg",
+      "accounts": [
+        {
+          "account_id": "TP-ISA-J",
+          "platform": "Talbot",
+          "type": "Stocks & Shares ISA",
+          "owner": "Jonah Berg",
+          "status": "open",
+          "value": 27500,
+          "currency": "GBP",
+          "valuation_date": "2026-04-01"
+        }
+      ]
+    }
+  }
+}

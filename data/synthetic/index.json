@@ -1,0 +1,29 @@
+{
+  "purpose": "Synthetic held-out-style clients. Same report themes as data/client_0*, different people, figures, platforms, and file shapes. Not consumed by the pipeline.",
+  "cases": [
+    "syn_01_isa_topup",
+    "syn_02_dated_conflict",
+    "syn_03_undated_meeting_figure",
+    "syn_04_null_and_closed",
+    "syn_05_status_vocabulary",
+    "syn_06_prose_request",
+    "syn_07_renamed_request_labels",
+    "syn_08_flat_account_list",
+    "syn_09_duplicate_id_disagrees",
+    "syn_10_two_meetings",
+    "syn_11_noise_with_figures",
+    "syn_12_scope_tokens",
+    "syn_13_scope_by_id",
+    "syn_14_money_kinds",
+    "syn_15_selling_phrasing",
+    "syn_16_non_iso_dates",
+    "syn_17_usd_currency",
+    "syn_18_sensitive_circumstances",
+    "syn_19_multi_platform",
+    "syn_20_nested_file",
+    "syn_21_notes_are_not_evidence",
+    "syn_22_new_account",
+    "syn_23_zero_and_negative",
+    "syn_24_unreadable_statement"
+  ]
+}

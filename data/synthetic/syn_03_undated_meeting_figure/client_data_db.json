@@ -1,0 +1,20 @@
+{
+  "snapshot_date": "2026-07-15",
+  "holders": {
+    "client": {
+      "name": "Samir Qureshi",
+      "accounts": [
+        {
+          "account_id": "VL-GIA-01",
+          "platform": "Vellum",
+          "type": "General Investment Account",
+          "owner": "Samir Qureshi",
+          "status": "open",
+          "value": 91000,
+          "currency": "GBP",
+          "valuation_date": "2026-07-15"
+        }
+      ]
+    }
+  }
+}

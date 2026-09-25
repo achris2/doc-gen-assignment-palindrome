@@ -1,0 +1,30 @@
+{
+  "snapshot_date": "2026-02-28",
+  "holders": {
+    "client": {
+      "name": "Tom\u00e1s Almeida",
+      "accounts": [
+        {
+          "account_id": "SR-ISA-T",
+          "platform": "Sable",
+          "type": "Stocks & Shares ISA",
+          "owner": "Tom\u00e1s Almeida",
+          "status": "open",
+          "value": 61000,
+          "currency": "GBP",
+          "valuation_date": "2026-02-28"
+        },
+        {
+          "account_id": "SR-GIA-T",
+          "platform": "Sable",
+          "type": "General Investment Account",
+          "owner": "Tom\u00e1s Almeida",
+          "status": "open",
+          "value": 44000,
+          "currency": "GBP",
+          "valuation_date": "2026-02-28"
+        }
+      ]
+    }
+  }
+}

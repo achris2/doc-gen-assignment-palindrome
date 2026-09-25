@@ -1,0 +1,30 @@
+{
+  "snapshot_date": "2026-08-31",
+  "holders": {
+    "client": {
+      "name": "Felix Braun",
+      "accounts": [
+        {
+          "account_id": "RM-ISA-F",
+          "platform": "Ramsay",
+          "type": "Stocks & Shares ISA",
+          "owner": "Felix Braun",
+          "status": "open",
+          "value": 0,
+          "currency": "GBP",
+          "valuation_date": "2026-08-31"
+        },
+        {
+          "account_id": "RM-CASH-F",
+          "platform": "Ramsay",
+          "type": "Cash Account",
+          "owner": "Felix Braun",
+          "status": "open",
+          "value": -120,
+          "currency": "GBP",
+          "valuation_date": "2026-08-31"
+        }
+      ]
+    }
+  }
+}

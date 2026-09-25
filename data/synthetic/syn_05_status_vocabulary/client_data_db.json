@@ -1,0 +1,50 @@
+{
+  "snapshot_date": "2026-08-20",
+  "holders": {
+    "client": {
+      "name": "Idris Cole",
+      "accounts": [
+        {
+          "account_id": "HW-ISA-I",
+          "platform": "Harwood",
+          "type": "Stocks & Shares ISA",
+          "owner": "Idris Cole",
+          "status": "open",
+          "value": 27500,
+          "currency": "GBP",
+          "valuation_date": "2026-08-20"
+        },
+        {
+          "account_id": "HW-GIA-I",
+          "platform": "Harwood",
+          "type": "General Investment Account",
+          "owner": "Idris Cole",
+          "status": "dormant",
+          "value": 12000,
+          "currency": "GBP",
+          "valuation_date": "2026-08-20"
+        },
+        {
+          "account_id": "HW-CASH-I",
+          "platform": "Harwood",
+          "type": "Cash Account",
+          "owner": "Idris Cole",
+          "status": "pending closure",
+          "value": 800,
+          "currency": "GBP",
+          "valuation_date": "2026-01-02"
+        },
+        {
+          "account_id": "HW-SIPP-I",
+          "platform": "Harwood",
+          "type": "SIPP",
+          "owner": "Idris Cole",
+          "status": "frozen",
+          "value": 140000,
+          "currency": "GBP",
+          "valuation_date": "2026-08-20"
+        }
+      ]
+    }
+  }
+}

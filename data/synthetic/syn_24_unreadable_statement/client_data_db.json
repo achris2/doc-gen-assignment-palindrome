@@ -1,0 +1,20 @@
+{
+  "snapshot_date": "2026-02-01",
+  "holders": {
+    "client": {
+      "name": "Ines Moreau",
+      "accounts": [
+        {
+          "account_id": "CY-GIA-I",
+          "platform": "Cypress",
+          "type": "General Investment Account",
+          "owner": "Ines Moreau",
+          "status": "open",
+          "value": 33000,
+          "currency": "GBP",
+          "valuation_date": "2026-02-01"
+        }
+      ]
+    }
+  }
+}

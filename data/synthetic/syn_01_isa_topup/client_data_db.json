@@ -1,0 +1,30 @@
+{
+  "snapshot_date": "2026-06-30",
+  "holders": {
+    "client": {
+      "name": "Priya Nair",
+      "accounts": [
+        {
+          "account_id": "NX-ISA-01",
+          "platform": "Northline",
+          "type": "Stocks & Shares ISA",
+          "owner": "Priya Nair",
+          "status": "open",
+          "value": 41800,
+          "currency": "GBP",
+          "valuation_date": "2026-06-30"
+        },
+        {
+          "account_id": "NX-CASH-01",
+          "platform": "Northline",
+          "type": "Cash Account",
+          "owner": "Priya Nair",
+          "status": "open",
+          "value": 18650,
+          "currency": "GBP",
+          "valuation_date": "2026-06-30"
+        }
+      ]
+    }
+  }
+}

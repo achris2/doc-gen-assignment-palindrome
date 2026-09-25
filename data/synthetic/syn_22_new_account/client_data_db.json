@@ -1,0 +1,35 @@
+{
+  "snapshot_date": "2026-07-31",
+  "holders": {
+    "client": {
+      "name": "Sofia Marin",
+      "accounts": [
+        {
+          "account_id": "GV-ISA-S",
+          "platform": "Grove",
+          "type": "Stocks & Shares ISA",
+          "owner": "Sofia Marin",
+          "status": "open",
+          "value": 24000,
+          "currency": "GBP",
+          "valuation_date": "2026-07-31"
+        }
+      ]
+    },
+    "partner": {
+      "name": "Eric Marin",
+      "accounts": [
+        {
+          "account_id": "GV-ISA-E",
+          "platform": "Grove",
+          "type": "Stocks & Shares ISA",
+          "owner": "Eric Marin",
+          "status": "open",
+          "value": 26000,
+          "currency": "GBP",
+          "valuation_date": "2026-07-31"
+        }
+      ]
+    }
+  }
+}

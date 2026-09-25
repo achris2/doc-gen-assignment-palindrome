@@ -38,7 +38,7 @@ Checks are assertions, not an LLM judge. They do not contain client names or fig
 
 A meeting £20,000 on `H-CASH-01` can still be typed as a balance when the note meant a transfer. Flagging that as a value conflict is the conservative result. The extract label is what is imperfect.
 
-One file is kept per role. A second meeting, request, or custody file overwrites the first. Request labels are an allowlist of exact strings. Scope is a bag of type words (`isa`, `gia`, `sipp`, `pension`, `bond`, `cash`, `joint`). Status must be the string `closed`. Dates must be ISO. Amounts print as sterling. Subfolders are not opened. `data/synthetic/` and `FRAGILITIES.md` list these ties. The pipeline does not read that folder unless `--data-dir` points there. The prompts were not fitted to those folders. A later failure means changing the general rule the case probes.
+One file is kept per role. A second meeting, request, or custody file overwrites the first. Request labels are an allowlist of exact strings. Scope is a bag of type words (`isa`, `gia`, `sipp`, `pension`, `bond`, `cash`, `joint`). Status must be the string `closed`. Dates must be ISO. Amounts print as sterling. Subfolders are not opened. `data/synthetic/` probes these ties. The pipeline does not read that folder unless `--data-dir` points there. The prompts were not fitted to those folders. A later failure means changing the general rule the case probes.
 
 ## With more time
 

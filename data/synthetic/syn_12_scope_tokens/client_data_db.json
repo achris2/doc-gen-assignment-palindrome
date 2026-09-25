@@ -1,0 +1,60 @@
+{
+  "snapshot_date": "2026-06-01",
+  "holders": {
+    "client": {
+      "name": "Hannah Reid",
+      "accounts": [
+        {
+          "account_id": "ISA-ONLY-H",
+          "platform": "Fen",
+          "type": "Stocks & Shares ISA",
+          "owner": "Hannah Reid",
+          "status": "open",
+          "value": 28000,
+          "currency": "GBP",
+          "valuation_date": "2026-06-01"
+        },
+        {
+          "account_id": "CASH-ISA-H",
+          "platform": "Fen",
+          "type": "Cash ISA",
+          "owner": "Hannah Reid",
+          "status": "open",
+          "value": 9000,
+          "currency": "GBP",
+          "valuation_date": "2026-06-01"
+        },
+        {
+          "account_id": "JISA-CHILD",
+          "platform": "Fen",
+          "type": "Junior ISA",
+          "owner": "Child",
+          "status": "open",
+          "value": 4500,
+          "currency": "GBP",
+          "valuation_date": "2026-06-01"
+        },
+        {
+          "account_id": "GIA-JOINT",
+          "platform": "Fen",
+          "type": "General Investment Account",
+          "owner": "Joint",
+          "status": "open",
+          "value": 70000,
+          "currency": "GBP",
+          "valuation_date": "2026-06-01"
+        },
+        {
+          "account_id": "PENSION-H",
+          "platform": "Fen",
+          "type": "Personal Pension",
+          "owner": "Hannah Reid",
+          "status": "open",
+          "value": 210000,
+          "currency": "GBP",
+          "valuation_date": "2026-06-01"
+        }
+      ]
+    }
+  }
+}

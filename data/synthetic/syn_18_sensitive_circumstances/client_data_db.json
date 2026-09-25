@@ -1,0 +1,30 @@
+{
+  "snapshot_date": "2026-08-10",
+  "holders": {
+    "client": {
+      "name": "Margaret Ellis",
+      "accounts": [
+        {
+          "account_id": "WN-ISA-M",
+          "platform": "Wendon",
+          "type": "Stocks & Shares ISA",
+          "owner": "Margaret Ellis",
+          "status": "open",
+          "value": 47000,
+          "currency": "GBP",
+          "valuation_date": "2026-08-10"
+        },
+        {
+          "account_id": "WN-CASH-M",
+          "platform": "Wendon",
+          "type": "Cash Account",
+          "owner": "Margaret Ellis",
+          "status": "open",
+          "value": 95000,
+          "currency": "GBP",
+          "valuation_date": "2026-08-10"
+        }
+      ]
+    }
+  }
+}

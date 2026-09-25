@@ -1,0 +1,20 @@
+{
+  "snapshot_date": "2026-09-01",
+  "holders": {
+    "client": {
+      "name": "Lucia Ferrer",
+      "accounts": [
+        {
+          "account_id": "SB-ISA-L",
+          "platform": "Southbank",
+          "type": "Stocks & Shares ISA",
+          "owner": "Lucia Ferrer",
+          "status": "open",
+          "value": 31000,
+          "currency": "GBP",
+          "valuation_date": "2026-09-01"
+        }
+      ]
+    }
+  }
+}

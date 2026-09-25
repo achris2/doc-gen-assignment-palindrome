@@ -1,0 +1,20 @@
+{
+  "snapshot_date": "2026-04-30",
+  "holders": {
+    "client": {
+      "name": "Chris Daley",
+      "accounts": [
+        {
+          "account_id": "OR-ISA-C",
+          "platform": "Orchard",
+          "type": "Stocks & Shares ISA",
+          "owner": "Chris Daley",
+          "status": "open",
+          "value": 19000,
+          "currency": "GBP",
+          "valuation_date": "2026-04-30"
+        }
+      ]
+    }
+  }
+}

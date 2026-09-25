@@ -1,0 +1,85 @@
+{
+  "snapshot_date": "2026-03-31",
+  "holders": {
+    "client": {
+      "name": "Arthur Singh",
+      "accounts": [
+        {
+          "account_id": "FV-ISA-A",
+          "platform": "Fairview",
+          "type": "Stocks & Shares ISA",
+          "owner": "Arthur Singh",
+          "status": "open",
+          "value": 62000,
+          "currency": "GBP",
+          "valuation_date": "2026-03-31"
+        },
+        {
+          "account_id": "FV-GIA-J",
+          "platform": "Fairview",
+          "type": "General Investment Account",
+          "owner": "Joint",
+          "status": "open",
+          "value": 110000,
+          "currency": "GBP",
+          "valuation_date": "2026-01-20"
+        },
+        {
+          "account_id": "KN-SIPP-A",
+          "platform": "Kinloch",
+          "type": "SIPP",
+          "owner": "Arthur Singh",
+          "status": "open",
+          "value": 240000,
+          "currency": "GBP",
+          "valuation_date": "2026-03-31"
+        },
+        {
+          "account_id": "KN-JISA-A",
+          "platform": "Kinloch",
+          "type": "Junior ISA",
+          "owner": "Child",
+          "status": "open",
+          "value": 8000,
+          "currency": "GBP",
+          "valuation_date": "2026-03-31"
+        }
+      ]
+    },
+    "partner": {
+      "name": "Noor Singh",
+      "accounts": [
+        {
+          "account_id": "FV-ISA-N",
+          "platform": "Fairview",
+          "type": "Stocks & Shares ISA",
+          "owner": "Noor Singh",
+          "status": "open",
+          "value": 58000,
+          "currency": "GBP",
+          "valuation_date": "2026-03-31"
+        },
+        {
+          "account_id": "FV-GIA-J",
+          "platform": "Fairview",
+          "type": "General Investment Account",
+          "owner": "Joint",
+          "status": "open",
+          "value": 110000,
+          "currency": "GBP",
+          "valuation_date": "2026-01-20"
+        },
+        {
+          "account_id": "LX-BOND-J",
+          "platform": "Loxley",
+          "type": "Onshore Investment Bond",
+          "owner": "Joint",
+          "status": "open",
+          "value": 75000,
+          "currency": "GBP",
+          "valuation_date": "2026-03-31"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "snapshot_date": "2026-07-01",
+  "holders": {
+    "client": {
+      "name": "Yara Mensah",
+      "accounts": [
+        {
+          "account_id": "DK-GIA-Y",
+          "platform": "Drake",
+          "type": "General Investment Account",
+          "owner": "Yara Mensah",
+          "status": "open",
+          "value": 42000,
+          "currency": "GBP",
+          "valuation_date": "2026-07-01"
+        },
+        {
+          "account_id": "DK-ISA-Y",
+          "platform": "Drake",
+          "type": "Stocks & Shares ISA",
+          "owner": "Yara Mensah",
+          "status": "open",
+          "value": 18000,
+          "currency": "GBP",
+          "valuation_date": "2026-07-01"
+        }
+      ]
+    }
+  }
+}
