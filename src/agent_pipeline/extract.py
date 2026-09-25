@@ -506,7 +506,7 @@ def extract_meeting_observations(
     if not payload:
         return []
     extracted = MeetingExtract.from_payload(payload)
-    return detach_narrative_amounts(
+    observations = detach_narrative_amounts(
         _observations_from_extract(
             extracted,
             source_role="meeting",
@@ -514,6 +514,12 @@ def extract_meeting_observations(
             default_as_of=extracted.meeting_date,
             known_account_ids=known_ids or None,
         )
+    )
+    return cover_omitted_amounts(
+        text,
+        observations,
+        source_file=source_file,
+        as_of=extracted.meeting_date,
     )
 
 
@@ -601,6 +607,55 @@ def detach_narrative_amounts(observations: list[Observation]) -> list[Observatio
                     kind=kind,
                 )
             )
+    return out
+
+
+def cover_omitted_amounts(
+    text: str,
+    observations: list[Observation],
+    *,
+    source_file: str,
+    as_of: str | None,
+) -> list[Observation]:
+    """Keep a one-amount sentence the extract skipped, when its wording names a money kind.
+
+    A sentence with two amounts is left alone. That is where a repayment and the sum it
+    came from have to be separate observations, not one label applied to both.
+    """
+    import re
+
+    from agent_pipeline.reconcile import pound_amounts
+
+    covered = {
+        _amount_key(obs.value)
+        for obs in observations
+        if _amount_key(obs.value) is not None and (obs.kind in MONEY_KINDS or obs.field == "account_value")
+    }
+    out = list(observations)
+    for sentence in re.split(r"(?<=[.!?])\s+", text):
+        amounts = pound_amounts(sentence)
+        if len(amounts) != 1:
+            continue
+        amount = amounts[0]
+        key = _amount_key(amount)
+        if key is None or key in covered:
+            continue
+        kind = _kind_for_money_sentence(sentence)
+        if kind is None:
+            continue
+        covered.add(key)
+        out.append(
+            observation(
+                field=kind,
+                value=amount,
+                source_role="meeting",
+                source_file=source_file,
+                as_of=as_of,
+                quote=sentence.strip(),
+                approximate="around" in sentence.lower() or "about" in sentence.lower() or "up to" in sentence.lower(),
+                kind=kind,
+            )
+        )
     return out
 
 

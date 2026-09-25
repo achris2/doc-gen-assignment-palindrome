@@ -354,7 +354,7 @@ def _record_narrative_group(
                 conflict=False,
             )
         )
-        key = field if index == 0 else f"{field}__{index + 1}"
+        key = field if index == 0 else f"{field} ({index + 1})"
         facts[key] = SourcedValue(
             value=entry.value,
             source=entry.source,

@@ -256,6 +256,41 @@ def test_received_sum_inside_circumstances_becomes_its_own_fact() -> None:
     assert len(untouched) == 1
 
 
+def test_omitted_one_amount_sentence_is_kept_and_a_pair_is_not_relabelled() -> None:
+    from agent_pipeline.extract import cover_omitted_amounts
+
+    text = (
+        "A completion payment of £850,000 was received on completion. "
+        "£200,000 of the £850,000 is already committed to repaying a bridging loan. "
+        "The deal includes a deferred earnout of up to £400,000, contingent on revenue targets."
+    )
+    covered = cover_omitted_amounts(
+        text,
+        [
+            observation(
+                field="received_proceeds",
+                value=850000,
+                source_role="meeting",
+                source_file="meeting_notes.docx",
+                kind="received_proceeds",
+            ),
+            observation(
+                field="loan_repayment",
+                value=200000,
+                source_role="meeting",
+                source_file="meeting_notes.docx",
+                kind="loan_repayment",
+            ),
+        ],
+        source_file="meeting_notes.docx",
+        as_of="2026-05-20",
+    )
+    earnout = next(item for item in covered if item.kind == "contingent_proceeds")
+    assert earnout.value == 400000
+    assert earnout.quote.startswith("The deal includes")
+    assert not any(item.kind == "loan_repayment" and item.value == 850000 for item in covered)
+
+
 def test_narrative_field_drops_money_kind() -> None:
     client = _mock_llm(
         {
