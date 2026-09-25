@@ -1,0 +1,600 @@
+{
+  "run": {
+    "label": "client_01_clean",
+    "recorded_at": "2026-09-25T16:40:37",
+    "model": "gpt-4o-mini",
+    "config_sha": "a483f28c980ef0ea7391f83b1fb246ffd95bc7b43a5228618e791f3e04a824cf",
+    "git_rev": "17a38e4"
+  },
+  "sources": [
+    {
+      "file": "client_data_db.json",
+      "role": "db",
+      "status": "parsed"
+    },
+    {
+      "file": "fde_notes.md",
+      "role": "internal",
+      "status": "parsed"
+    },
+    {
+      "file": "meeting_notes.docx",
+      "role": "meeting",
+      "status": "parsed"
+    },
+    {
+      "file": "platform_market_update.docx",
+      "role": "noise",
+      "status": "parsed"
+    },
+    {
+      "file": "report_request.docx",
+      "role": "request",
+      "status": "parsed"
+    },
+    {
+      "file": "template_spec.md",
+      "role": "internal",
+      "status": "parsed"
+    }
+  ],
+  "facts": [
+    {
+      "id": "f-account-H-CASH-01-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency H-CASH-01 = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-CASH-01",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency H-CASH-01 = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-01-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency H-ISA-01 = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-01",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency H-ISA-01 = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-CASH-01-account_owner",
+      "field": "account_owner",
+      "value": "Margaret Hughes",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner H-CASH-01 = Margaret Hughes",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-CASH-01",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Margaret Hughes",
+          "kind": null,
+          "excerpt": "account_owner H-CASH-01 = Margaret Hughes"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-01-account_owner",
+      "field": "account_owner",
+      "value": "Margaret Hughes",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner H-ISA-01 = Margaret Hughes",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-01",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Margaret Hughes",
+          "kind": null,
+          "excerpt": "account_owner H-ISA-01 = Margaret Hughes"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-CASH-01-account_platform",
+      "field": "account_platform",
+      "value": "Holloway",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform H-CASH-01 = Holloway",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-CASH-01",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Holloway",
+          "kind": null,
+          "excerpt": "account_platform H-CASH-01 = Holloway"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-01-account_platform",
+      "field": "account_platform",
+      "value": "Holloway",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform H-ISA-01 = Holloway",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-01",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Holloway",
+          "kind": null,
+          "excerpt": "account_platform H-ISA-01 = Holloway"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-CASH-01-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status H-CASH-01 = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-CASH-01",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status H-CASH-01 = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-01-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status H-ISA-01 = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-01",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status H-ISA-01 = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-CASH-01-account_type",
+      "field": "account_type",
+      "value": "Cash Account",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type H-CASH-01 = Cash Account",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-CASH-01",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Cash Account",
+          "kind": null,
+          "excerpt": "account_type H-CASH-01 = Cash Account"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-01-account_type",
+      "field": "account_type",
+      "value": "Stocks & Shares ISA",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type H-ISA-01 = Stocks & Shares ISA",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-01",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Stocks & Shares ISA",
+          "kind": null,
+          "excerpt": "account_type H-ISA-01 = Stocks & Shares ISA"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-CASH-01-account_balance",
+      "field": "account_value",
+      "value": 25000.0,
+      "source_file": "client_data_db.json",
+      "excerpt": "account_balance H-CASH-01 = 25000.0",
+      "conflict": false,
+      "kind": "account_balance",
+      "account_id": "H-CASH-01",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 25000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance H-CASH-01 = 25000.0"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-CASH-01-transfer_amount",
+      "field": "account_value",
+      "value": 20000,
+      "source_file": "meeting_notes.docx",
+      "excerpt": "We agreed she would move £20,000 from the cash account into the Stocks & Shares ISA.",
+      "conflict": false,
+      "kind": "transfer_amount",
+      "account_id": "H-CASH-01",
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": 20000,
+          "kind": "transfer_amount",
+          "excerpt": "We agreed she would move £20,000 from the cash account into the Stocks & Shares ISA."
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-01-account_balance",
+      "field": "account_value",
+      "value": 52000.0,
+      "source_file": "client_data_db.json",
+      "excerpt": "account_balance H-ISA-01 = 52000.0",
+      "conflict": false,
+      "kind": "account_balance",
+      "account_id": "H-ISA-01",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 52000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance H-ISA-01 = 52000.0"
+        }
+      ]
+    },
+    {
+      "id": "f-accounts_covered",
+      "field": "accounts_covered",
+      "value": "Holloway Stocks & Shares ISA",
+      "source_file": "report_request.docx",
+      "excerpt": "accounts_covered = Holloway Stocks & Shares ISA",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "Holloway Stocks & Shares ISA",
+          "kind": null,
+          "excerpt": "accounts_covered = Holloway Stocks & Shares ISA"
+        }
+      ]
+    },
+    {
+      "id": "f-circumstances",
+      "field": "circumstances",
+      "value": "Margaret is retired and confirmed there have been no changes to her circumstances or objectives since last year's review.",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "Margaret is retired and confirmed there have been no changes to her circumstances or objectives since last year's review.",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "Margaret is retired and confirmed there have been no changes to her circumstances or objectives since last year's review.",
+          "kind": null,
+          "excerpt": "Margaret is retired and confirmed there have been no changes to her circumstances or objectives since last year's review."
+        }
+      ]
+    },
+    {
+      "id": "f-initial_charge",
+      "field": "initial_charge",
+      "value": "0%",
+      "source_file": "report_request.docx",
+      "excerpt": "initial_charge = 0%",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "0%",
+          "kind": null,
+          "excerpt": "initial_charge = 0%"
+        }
+      ]
+    },
+    {
+      "id": "f-investment_amount",
+      "field": "investment_amount",
+      "value": "GBP 20,000",
+      "source_file": "report_request.docx",
+      "excerpt": "transfer_amount = GBP 20,000",
+      "conflict": false,
+      "kind": "transfer_amount",
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "GBP 20,000",
+          "kind": "transfer_amount",
+          "excerpt": "transfer_amount = GBP 20,000"
+        }
+      ]
+    },
+    {
+      "id": "f-objectives",
+      "field": "objectives",
+      "value": "She remains comfortable with the moderate approach to risk we agreed previously.",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "She remains comfortable with the moderate approach to risk we agreed previously.",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "She remains comfortable with the moderate approach to risk we agreed previously.",
+          "kind": null,
+          "excerpt": "She remains comfortable with the moderate approach to risk we agreed previously."
+        }
+      ]
+    },
+    {
+      "id": "f-ownership",
+      "field": "ownership",
+      "value": "Single",
+      "source_file": "report_request.docx",
+      "excerpt": "ownership = Single",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "Single",
+          "kind": null,
+          "excerpt": "ownership = Single"
+        }
+      ]
+    },
+    {
+      "id": "f-product",
+      "field": "product",
+      "value": "Top up of existing Stocks & Shares ISA",
+      "source_file": "report_request.docx",
+      "excerpt": "product = Top up of existing Stocks & Shares ISA",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "Top up of existing Stocks & Shares ISA",
+          "kind": null,
+          "excerpt": "product = Top up of existing Stocks & Shares ISA"
+        }
+      ]
+    },
+    {
+      "id": "f-recommendation_summary",
+      "field": "recommendation_summary",
+      "value": "We agreed she would move £20,000 from the cash account into the Stocks & Shares ISA.",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "We agreed she would move £20,000 from the cash account into the Stocks & Shares ISA.",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "We agreed she would move £20,000 from the cash account into the Stocks & Shares ISA.",
+          "kind": null,
+          "excerpt": "We agreed she would move £20,000 from the cash account into the Stocks & Shares ISA."
+        }
+      ]
+    },
+    {
+      "id": "f-risk_profile",
+      "field": "risk_profile",
+      "value": "4 (moderate)",
+      "source_file": "report_request.docx",
+      "excerpt": "risk_profile = 4 (moderate)",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "4 (moderate)",
+          "kind": null,
+          "excerpt": "risk_profile = 4 (moderate)"
+        }
+      ]
+    },
+    {
+      "id": "f-selling",
+      "field": "selling",
+      "value": false,
+      "source_file": "report_request.docx",
+      "excerpt": "selling = False",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": false,
+          "kind": null,
+          "excerpt": "selling = False"
+        }
+      ]
+    },
+    {
+      "id": "f-snapshot_date",
+      "field": "snapshot_date",
+      "value": "2026-04-30",
+      "source_file": "client_data_db.json",
+      "excerpt": "snapshot_date = 2026-04-30",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "2026-04-30",
+          "kind": null,
+          "excerpt": "snapshot_date = 2026-04-30"
+        }
+      ]
+    },
+    {
+      "id": "f-source_of_funds",
+      "field": "source_of_funds",
+      "value": "Cash held on deposit in the Holloway cash account",
+      "source_file": "report_request.docx",
+      "excerpt": "source_of_funds = Cash held on deposit in the Holloway cash account",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "Cash held on deposit in the Holloway cash account",
+          "kind": null,
+          "excerpt": "source_of_funds = Cash held on deposit in the Holloway cash account"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "a-fund-h-cash-01",
+      "amount": 20000,
+      "supports": "f-account-H-CASH-01-transfer_amount",
+      "who": "H-CASH-01",
+      "product": "Top up of existing Stocks & Shares ISA",
+      "source_of_funds": "Cash held on deposit in the Holloway cash account",
+      "summary": "We agreed she would move £20,000 from the cash account into the Stocks & Shares ISA.",
+      "corroborated": "f-investment_amount"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "d-transfer-f-account-h-cash-01-transfer-amount",
+      "type": "transfer",
+      "status": "agreed",
+      "supports": "f-account-H-CASH-01-transfer_amount",
+      "subject": "Top up of existing Stocks & Shares ISA",
+      "amount": 20000
+    }
+  ],
+  "sections": {
+    "summary": {
+      "fact_ids": [
+        "f-circumstances",
+        "f-objectives"
+      ]
+    },
+    "recommendation": {
+      "items": [
+        {
+          "action_id": "a-fund-h-cash-01",
+          "text": "We agreed she would move £20,000 from the cash account into the Stocks & Shares ISA. Amount: £20,000. Source of funds: cash held on deposit in the Holloway cash account."
+        }
+      ]
+    }
+  },
+  "selling": false,
+  "conflicts": [],
+  "review_items": [
+    "[REVIEW: platform fee]",
+    "[REVIEW: advice fee]"
+  ],
+  "accounts": [
+    {
+      "account_id": "H-CASH-01",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Margaret Hughes",
+      "owner_source": "db",
+      "platform": "Holloway",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "Cash Account",
+      "type_source": "db",
+      "value": 25000.0,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false
+    },
+    {
+      "account_id": "H-ISA-01",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Margaret Hughes",
+      "owner_source": "db",
+      "platform": "Holloway",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "Stocks & Shares ISA",
+      "type_source": "db",
+      "value": 52000.0,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false
+    }
+  ]
+}

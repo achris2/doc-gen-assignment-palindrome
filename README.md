@@ -29,6 +29,8 @@ Writes `outputs/<client>.md` and `outputs/<client>/case_facts.json`.
 
 Clients under `data/`: `client_01_clean`, `client_02_medium`, `client_03_hard`, `client_04_stretch`.
 
+The reports in this checkout are `outputs/submission/`.
+
 ## Pipeline
 
 `src/agent_pipeline/pipeline.py`: classify → extract → reconcile → write → footer.

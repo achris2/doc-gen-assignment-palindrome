@@ -1,0 +1,49 @@
+{
+  "pipeline_ms": 8295.3,
+  "calls": [
+    {
+      "stage": "classify",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 1378,
+      "completion_tokens": 79,
+      "cached_tokens": 1280,
+      "wall_ms": 1941.1,
+      "server_ms": null,
+      "request_id": "chatcmpl-ES2KNu9mwa2HlZpU5LDbHA51QQiCC",
+      "service_tier": "default"
+    },
+    {
+      "stage": "meeting",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 1025,
+      "completion_tokens": 366,
+      "cached_tokens": 0,
+      "wall_ms": 3243.2,
+      "server_ms": null,
+      "request_id": "chatcmpl-ES2KPM4twFqJixFo1HEUZQDDzKbPx",
+      "service_tier": "default"
+    },
+    {
+      "stage": "decisions",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 644,
+      "completion_tokens": 179,
+      "cached_tokens": 0,
+      "wall_ms": 2077.6,
+      "server_ms": null,
+      "request_id": "chatcmpl-ES2KSzOowZ9iGtnKSqMBagclUrxzL",
+      "service_tier": "default"
+    },
+    {
+      "stage": "narrative:summary",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 457,
+      "completion_tokens": 70,
+      "cached_tokens": 0,
+      "wall_ms": 937.9,
+      "server_ms": null,
+      "request_id": "chatcmpl-ES2KU32FISs3akQyFeFuiHJwco6Im",
+      "service_tier": "default"
+    }
+  ]
+}

@@ -1,0 +1,1812 @@
+{
+  "run": {
+    "label": "client_04_stretch",
+    "recorded_at": "2026-09-25T16:41:11",
+    "model": "gpt-4o-mini",
+    "config_sha": "a483f28c980ef0ea7391f83b1fb246ffd95bc7b43a5228618e791f3e04a824cf",
+    "git_rev": "17a38e4"
+  },
+  "sources": [
+    {
+      "file": "client_data_db.json",
+      "role": "db",
+      "status": "parsed"
+    },
+    {
+      "file": "fde_notes.md",
+      "role": "internal",
+      "status": "parsed"
+    },
+    {
+      "file": "meeting_notes.docx",
+      "role": "meeting",
+      "status": "parsed"
+    },
+    {
+      "file": "platform_market_update.docx",
+      "role": "noise",
+      "status": "parsed"
+    },
+    {
+      "file": "portfolio_pack.docx",
+      "role": "noise",
+      "status": "parsed"
+    },
+    {
+      "file": "report_request.docx",
+      "role": "request",
+      "status": "parsed"
+    },
+    {
+      "file": "statement_summary.png",
+      "role": "noise",
+      "status": "skipped"
+    },
+    {
+      "file": "template_spec.md",
+      "role": "internal",
+      "status": "parsed"
+    }
+  ],
+  "facts": [
+    {
+      "id": "f-account-B4-GIA-J-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency B4-GIA-J = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-GIA-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency B4-GIA-J = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-SIPP-C-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency B4-SIPP-C = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-SIPP-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency B4-SIPP-C = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-SIPP-J-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency B4-SIPP-J = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-SIPP-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency B4-SIPP-J = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-GIA-HJ-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency H4-GIA-HJ = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-GIA-HJ",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency H4-GIA-HJ = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-ISA-C-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency H4-ISA-C = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-ISA-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency H4-ISA-C = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-ISA-J-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency H4-ISA-J = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-ISA-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency H4-ISA-J = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-BOND-J-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency M4-BOND-J = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-BOND-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency M4-BOND-J = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-CASH-C-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency M4-CASH-C = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-CASH-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency M4-CASH-C = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-CASH-J-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency M4-CASH-J = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-CASH-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency M4-CASH-J = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-OLD-C-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency M4-OLD-C = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-OLD-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency M4-OLD-C = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-GIA-J-account_owner",
+      "field": "account_owner",
+      "value": "Joint",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner B4-GIA-J = Joint",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-GIA-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Joint",
+          "kind": null,
+          "excerpt": "account_owner B4-GIA-J = Joint"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-SIPP-C-account_owner",
+      "field": "account_owner",
+      "value": "Caroline Whitmore",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner B4-SIPP-C = Caroline Whitmore",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-SIPP-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Caroline Whitmore",
+          "kind": null,
+          "excerpt": "account_owner B4-SIPP-C = Caroline Whitmore"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-SIPP-J-account_owner",
+      "field": "account_owner",
+      "value": "James Whitmore",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner B4-SIPP-J = James Whitmore",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-SIPP-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "James Whitmore",
+          "kind": null,
+          "excerpt": "account_owner B4-SIPP-J = James Whitmore"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-GIA-HJ-account_owner",
+      "field": "account_owner",
+      "value": "Joint",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner H4-GIA-HJ = Joint",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-GIA-HJ",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Joint",
+          "kind": null,
+          "excerpt": "account_owner H4-GIA-HJ = Joint"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-ISA-C-account_owner",
+      "field": "account_owner",
+      "value": "Caroline Whitmore",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner H4-ISA-C = Caroline Whitmore",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-ISA-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Caroline Whitmore",
+          "kind": null,
+          "excerpt": "account_owner H4-ISA-C = Caroline Whitmore"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-ISA-J-account_owner",
+      "field": "account_owner",
+      "value": "James Whitmore",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner H4-ISA-J = James Whitmore",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-ISA-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "James Whitmore",
+          "kind": null,
+          "excerpt": "account_owner H4-ISA-J = James Whitmore"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-BOND-J-account_owner",
+      "field": "account_owner",
+      "value": "Joint",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner M4-BOND-J = Joint",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-BOND-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Joint",
+          "kind": null,
+          "excerpt": "account_owner M4-BOND-J = Joint"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-CASH-C-account_owner",
+      "field": "account_owner",
+      "value": "Caroline Whitmore",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner M4-CASH-C = Caroline Whitmore",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-CASH-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Caroline Whitmore",
+          "kind": null,
+          "excerpt": "account_owner M4-CASH-C = Caroline Whitmore"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-CASH-J-account_owner",
+      "field": "account_owner",
+      "value": "James Whitmore",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner M4-CASH-J = James Whitmore",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-CASH-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "James Whitmore",
+          "kind": null,
+          "excerpt": "account_owner M4-CASH-J = James Whitmore"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-OLD-C-account_owner",
+      "field": "account_owner",
+      "value": "Caroline Whitmore",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner M4-OLD-C = Caroline Whitmore",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-OLD-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Caroline Whitmore",
+          "kind": null,
+          "excerpt": "account_owner M4-OLD-C = Caroline Whitmore"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-GIA-J-account_platform",
+      "field": "account_platform",
+      "value": "Brightwell",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform B4-GIA-J = Brightwell",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-GIA-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Brightwell",
+          "kind": null,
+          "excerpt": "account_platform B4-GIA-J = Brightwell"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-SIPP-C-account_platform",
+      "field": "account_platform",
+      "value": "Brightwell",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform B4-SIPP-C = Brightwell",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-SIPP-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Brightwell",
+          "kind": null,
+          "excerpt": "account_platform B4-SIPP-C = Brightwell"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-SIPP-J-account_platform",
+      "field": "account_platform",
+      "value": "Brightwell",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform B4-SIPP-J = Brightwell",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-SIPP-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Brightwell",
+          "kind": null,
+          "excerpt": "account_platform B4-SIPP-J = Brightwell"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-GIA-HJ-account_platform",
+      "field": "account_platform",
+      "value": "Holloway",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform H4-GIA-HJ = Holloway",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-GIA-HJ",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Holloway",
+          "kind": null,
+          "excerpt": "account_platform H4-GIA-HJ = Holloway"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-ISA-C-account_platform",
+      "field": "account_platform",
+      "value": "Holloway",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform H4-ISA-C = Holloway",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-ISA-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Holloway",
+          "kind": null,
+          "excerpt": "account_platform H4-ISA-C = Holloway"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-ISA-J-account_platform",
+      "field": "account_platform",
+      "value": "Holloway",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform H4-ISA-J = Holloway",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-ISA-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Holloway",
+          "kind": null,
+          "excerpt": "account_platform H4-ISA-J = Holloway"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-BOND-J-account_platform",
+      "field": "account_platform",
+      "value": "Meridian",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform M4-BOND-J = Meridian",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-BOND-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Meridian",
+          "kind": null,
+          "excerpt": "account_platform M4-BOND-J = Meridian"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-CASH-C-account_platform",
+      "field": "account_platform",
+      "value": "Meridian",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform M4-CASH-C = Meridian",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-CASH-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Meridian",
+          "kind": null,
+          "excerpt": "account_platform M4-CASH-C = Meridian"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-CASH-J-account_platform",
+      "field": "account_platform",
+      "value": "Meridian",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform M4-CASH-J = Meridian",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-CASH-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Meridian",
+          "kind": null,
+          "excerpt": "account_platform M4-CASH-J = Meridian"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-OLD-C-account_platform",
+      "field": "account_platform",
+      "value": "Meridian",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform M4-OLD-C = Meridian",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-OLD-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Meridian",
+          "kind": null,
+          "excerpt": "account_platform M4-OLD-C = Meridian"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-GIA-J-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status B4-GIA-J = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-GIA-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status B4-GIA-J = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-SIPP-C-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status B4-SIPP-C = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-SIPP-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status B4-SIPP-C = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-SIPP-J-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status B4-SIPP-J = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-SIPP-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status B4-SIPP-J = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-GIA-HJ-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status H4-GIA-HJ = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-GIA-HJ",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status H4-GIA-HJ = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-ISA-C-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status H4-ISA-C = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-ISA-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status H4-ISA-C = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-ISA-J-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status H4-ISA-J = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-ISA-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status H4-ISA-J = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-BOND-J-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status M4-BOND-J = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-BOND-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status M4-BOND-J = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-CASH-C-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status M4-CASH-C = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-CASH-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status M4-CASH-C = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-CASH-J-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status M4-CASH-J = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-CASH-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status M4-CASH-J = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-OLD-C-account_status",
+      "field": "account_status",
+      "value": "closed",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status M4-OLD-C = closed",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-OLD-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "closed",
+          "kind": null,
+          "excerpt": "account_status M4-OLD-C = closed"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-GIA-J-account_type",
+      "field": "account_type",
+      "value": "General Investment Account",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type B4-GIA-J = General Investment Account",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-GIA-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "General Investment Account",
+          "kind": null,
+          "excerpt": "account_type B4-GIA-J = General Investment Account"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-SIPP-C-account_type",
+      "field": "account_type",
+      "value": "SIPP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type B4-SIPP-C = SIPP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-SIPP-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "SIPP",
+          "kind": null,
+          "excerpt": "account_type B4-SIPP-C = SIPP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-SIPP-J-account_type",
+      "field": "account_type",
+      "value": "SIPP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type B4-SIPP-J = SIPP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "B4-SIPP-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "SIPP",
+          "kind": null,
+          "excerpt": "account_type B4-SIPP-J = SIPP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-GIA-HJ-account_type",
+      "field": "account_type",
+      "value": "General Investment Account",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type H4-GIA-HJ = General Investment Account",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-GIA-HJ",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "General Investment Account",
+          "kind": null,
+          "excerpt": "account_type H4-GIA-HJ = General Investment Account"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-ISA-C-account_type",
+      "field": "account_type",
+      "value": "Stocks & Shares ISA",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type H4-ISA-C = Stocks & Shares ISA",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-ISA-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Stocks & Shares ISA",
+          "kind": null,
+          "excerpt": "account_type H4-ISA-C = Stocks & Shares ISA"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-ISA-J-account_type",
+      "field": "account_type",
+      "value": "Stocks & Shares ISA",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type H4-ISA-J = Stocks & Shares ISA",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-ISA-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Stocks & Shares ISA",
+          "kind": null,
+          "excerpt": "account_type H4-ISA-J = Stocks & Shares ISA"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-BOND-J-account_type",
+      "field": "account_type",
+      "value": "Offshore Investment Bond",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type M4-BOND-J = Offshore Investment Bond",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-BOND-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Offshore Investment Bond",
+          "kind": null,
+          "excerpt": "account_type M4-BOND-J = Offshore Investment Bond"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-CASH-C-account_type",
+      "field": "account_type",
+      "value": "Cash Account",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type M4-CASH-C = Cash Account",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-CASH-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Cash Account",
+          "kind": null,
+          "excerpt": "account_type M4-CASH-C = Cash Account"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-CASH-J-account_type",
+      "field": "account_type",
+      "value": "Cash Account",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type M4-CASH-J = Cash Account",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-CASH-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Cash Account",
+          "kind": null,
+          "excerpt": "account_type M4-CASH-J = Cash Account"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-OLD-C-account_type",
+      "field": "account_type",
+      "value": "Cash Account",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type M4-OLD-C = Cash Account",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-OLD-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Cash Account",
+          "kind": null,
+          "excerpt": "account_type M4-OLD-C = Cash Account"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-GIA-J-account_balance",
+      "field": "account_value",
+      "value": 95000.0,
+      "source_file": "client_data_db.json",
+      "excerpt": "account_balance B4-GIA-J = 95000.0",
+      "conflict": false,
+      "kind": "account_balance",
+      "account_id": "B4-GIA-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 95000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance B4-GIA-J = 95000.0"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-SIPP-C-account_balance",
+      "field": "account_value",
+      "value": 430000.0,
+      "source_file": "client_data_db.json",
+      "excerpt": "account_balance B4-SIPP-C = 430000.0",
+      "conflict": false,
+      "kind": "account_balance",
+      "account_id": "B4-SIPP-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 430000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance B4-SIPP-C = 430000.0"
+        }
+      ]
+    },
+    {
+      "id": "f-account-B4-SIPP-J-account_balance",
+      "field": "account_value",
+      "value": 610000.0,
+      "source_file": "client_data_db.json",
+      "excerpt": "account_balance B4-SIPP-J = 610000.0",
+      "conflict": false,
+      "kind": "account_balance",
+      "account_id": "B4-SIPP-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 610000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance B4-SIPP-J = 610000.0"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-GIA-HJ-account_balance",
+      "field": "account_value",
+      "value": 255000,
+      "source_file": "meeting_notes.docx",
+      "excerpt": "pulling it up live, it was showing around £255,000.",
+      "conflict": true,
+      "kind": "account_balance",
+      "account_id": "H4-GIA-HJ",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 240000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance H4-GIA-HJ = 240000.0"
+        },
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": 255000,
+          "kind": "account_balance",
+          "excerpt": "pulling it up live, it was showing around £255,000."
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-ISA-C-account_balance",
+      "field": "account_value",
+      "value": 82000.0,
+      "source_file": "client_data_db.json",
+      "excerpt": "account_balance H4-ISA-C = 82000.0",
+      "conflict": false,
+      "kind": "account_balance",
+      "account_id": "H4-ISA-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 82000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance H4-ISA-C = 82000.0"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H4-ISA-J-account_balance",
+      "field": "account_value",
+      "value": 85000.0,
+      "source_file": "client_data_db.json",
+      "excerpt": "account_balance H4-ISA-J = 85000.0",
+      "conflict": false,
+      "kind": "account_balance",
+      "account_id": "H4-ISA-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 85000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance H4-ISA-J = 85000.0"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-BOND-J-account_balance",
+      "field": "account_value",
+      "value": 180000.0,
+      "source_file": "client_data_db.json",
+      "excerpt": "account_balance M4-BOND-J = 180000.0",
+      "conflict": false,
+      "kind": "account_balance",
+      "account_id": "M4-BOND-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 180000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance M4-BOND-J = 180000.0"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-CASH-J-account_balance",
+      "field": "account_value",
+      "value": 30000.0,
+      "source_file": "client_data_db.json",
+      "excerpt": "account_balance M4-CASH-J = 30000.0",
+      "conflict": false,
+      "kind": "account_balance",
+      "account_id": "M4-CASH-J",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 30000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance M4-CASH-J = 30000.0"
+        }
+      ]
+    },
+    {
+      "id": "f-account-M4-OLD-C-account_balance",
+      "field": "account_value",
+      "value": 0.0,
+      "source_file": "client_data_db.json",
+      "excerpt": "account_balance M4-OLD-C = 0.0",
+      "conflict": false,
+      "kind": "account_balance",
+      "account_id": "M4-OLD-C",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 0.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance M4-OLD-C = 0.0"
+        }
+      ]
+    },
+    {
+      "id": "f-accounts_covered",
+      "field": "accounts_covered",
+      "value": "Holloway ISAs (James and Caroline), Brightwell SIPPs (James and Caroline), the joint GIAs (Holloway and Brightwell), the Meridian offshore bond, plus a new joint account for the proceeds",
+      "source_file": "report_request.docx",
+      "excerpt": "accounts_covered = Holloway ISAs (James and Caroline), Brightwell SIPPs (James and Caroline), the joint GIAs (Holloway and Brightwell), the Meridian offshore bond, plus a new joint account for the proceeds",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "Holloway ISAs (James and Caroline), Brightwell SIPPs (James and Caroline), the joint GIAs (Holloway and Brightwell), the Meridian offshore bond, plus a new joint account for the proceeds",
+          "kind": null,
+          "excerpt": "accounts_covered = Holloway ISAs (James and Caroline), Brightwell SIPPs (James and Caroline), the joint GIAs (Holloway and Brightwell), the Meridian offshore bond, plus a new joint account for the proceeds"
+        }
+      ]
+    },
+    {
+      "id": "f-circumstances",
+      "field": "circumstances",
+      "value": "James completed the sale of his company in April. It has been a busy and slightly emotional period for them both, having built the business over many years.",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "By way of background: James completed the sale of his company in April. It has been a busy and slightly emotional period for them both, having built the business over many years.",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "James completed the sale of his company in April. It has been a busy and slightly emotional period for them both, having built the business over many years.",
+          "kind": null,
+          "excerpt": "By way of background: James completed the sale of his company in April. It has been a busy and slightly emotional period for them both, having built the business over many years."
+        }
+      ]
+    },
+    {
+      "id": "f-contingent_proceeds_400000",
+      "field": "contingent_proceeds_400000",
+      "value": 400000.0,
+      "source_file": "meeting_notes.docx",
+      "excerpt": "the deal includes a deferred earnout of up to £400,000, payable over the next two years and contingent on the business hitting agreed revenue targets.",
+      "conflict": false,
+      "kind": "contingent_proceeds",
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": 400000.0,
+          "kind": "contingent_proceeds",
+          "excerpt": "the deal includes a deferred earnout of up to £400,000, payable over the next two years and contingent on the business hitting agreed revenue targets."
+        }
+      ]
+    },
+    {
+      "id": "f-initial_charge",
+      "field": "initial_charge",
+      "value": "0.5%",
+      "source_file": "report_request.docx",
+      "excerpt": "initial_charge = 0.5%",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "0.5%",
+          "kind": null,
+          "excerpt": "initial_charge = 0.5%"
+        }
+      ]
+    },
+    {
+      "id": "f-investment_amount",
+      "field": "investment_amount",
+      "value": "Proceeds from the recent business sale (see meeting notes)",
+      "source_file": "report_request.docx",
+      "excerpt": "transfer_amount = Proceeds from the recent business sale (see meeting notes)",
+      "conflict": false,
+      "kind": "transfer_amount",
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "Proceeds from the recent business sale (see meeting notes)",
+          "kind": "transfer_amount",
+          "excerpt": "transfer_amount = Proceeds from the recent business sale (see meeting notes)"
+        }
+      ]
+    },
+    {
+      "id": "f-loan_repayment_200000",
+      "field": "loan_repayment_200000",
+      "value": 200000.0,
+      "source_file": "meeting_notes.docx",
+      "excerpt": "£200,000 of the £850,000 is already committed to repaying a bridging loan James took out last year against the business.",
+      "conflict": false,
+      "kind": "loan_repayment",
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": 200000.0,
+          "kind": "loan_repayment",
+          "excerpt": "£200,000 of the £850,000 is already committed to repaying a bridging loan James took out last year against the business."
+        }
+      ]
+    },
+    {
+      "id": "f-money_amount_850000",
+      "field": "money_amount_850000",
+      "value": 850000.0,
+      "source_file": "meeting_notes.docx",
+      "excerpt": "£200,000 of the £850,000 is already committed to repaying a bridging loan James took out last year against the business.",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": 850000.0,
+          "kind": null,
+          "excerpt": "£200,000 of the £850,000 is already committed to repaying a bridging loan James took out last year against the business."
+        }
+      ]
+    },
+    {
+      "id": "f-objectives",
+      "field": "objectives",
+      "value": "Their overriding objective for this money is clear: to build a tax-efficient base that can replace James's income when he steps back from full-time work in about three years.",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "Their overriding objective for this money is clear: to build a tax-efficient base that can replace James's income when he steps back from full-time work in about three years.",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "Their overriding objective for this money is clear: to build a tax-efficient base that can replace James's income when he steps back from full-time work in about three years.",
+          "kind": null,
+          "excerpt": "Their overriding objective for this money is clear: to build a tax-efficient base that can replace James's income when he steps back from full-time work in about three years."
+        }
+      ]
+    },
+    {
+      "id": "f-ownership",
+      "field": "ownership",
+      "value": "Joint clients; a mix of individual and joint accounts",
+      "source_file": "report_request.docx",
+      "excerpt": "ownership = Joint clients; a mix of individual and joint accounts",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "Joint clients; a mix of individual and joint accounts",
+          "kind": null,
+          "excerpt": "ownership = Joint clients; a mix of individual and joint accounts"
+        }
+      ]
+    },
+    {
+      "id": "f-product",
+      "field": "product",
+      "value": "ISA and SIPP top-ups, contribution to the joint GIA, and a new joint investment account",
+      "source_file": "report_request.docx",
+      "excerpt": "product = ISA and SIPP top-ups, contribution to the joint GIA, and a new joint investment account",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "ISA and SIPP top-ups, contribution to the joint GIA, and a new joint investment account",
+          "kind": null,
+          "excerpt": "product = ISA and SIPP top-ups, contribution to the joint GIA, and a new joint investment account"
+        }
+      ]
+    },
+    {
+      "id": "f-received_proceeds_850000",
+      "field": "received_proceeds_850000",
+      "value": 850000.0,
+      "source_file": "meeting_notes.docx",
+      "excerpt": "a completion payment of £850,000 was received on completion and is currently sitting in a solicitor's client account ready to be moved.",
+      "conflict": false,
+      "kind": "received_proceeds",
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": 850000.0,
+          "kind": "received_proceeds",
+          "excerpt": "a completion payment of £850,000 was received on completion and is currently sitting in a solicitor's client account ready to be moved."
+        }
+      ]
+    },
+    {
+      "id": "f-recommendation_summary",
+      "field": "recommendation_summary",
+      "value": "We agreed to use both ISA allowances for the new tax year, make pension contributions into both SIPPs up to the appropriate level, add to the Holloway joint GIA, and place the remaining balance into a new jointly-held investment account.",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "On the plan for the available proceeds: we agreed to use both ISA allowances for the new tax year, make pension contributions into both SIPPs up to the appropriate level, add to the Holloway joint GIA, and place the remaining balance into a new jointly-held investment account.",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "We agreed to use both ISA allowances for the new tax year, make pension contributions into both SIPPs up to the appropriate level, add to the Holloway joint GIA, and place the remaining balance into a new jointly-held investment account.",
+          "kind": null,
+          "excerpt": "On the plan for the available proceeds: we agreed to use both ISA allowances for the new tax year, make pension contributions into both SIPPs up to the appropriate level, add to the Holloway joint GIA, and place the remaining balance into a new jointly-held investment account."
+        }
+      ]
+    },
+    {
+      "id": "f-risk_profile",
+      "field": "risk_profile",
+      "value": "4 (balanced to moderate)",
+      "source_file": "report_request.docx",
+      "excerpt": "risk_profile = 4 (balanced to moderate)",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "4 (balanced to moderate)",
+          "kind": null,
+          "excerpt": "risk_profile = 4 (balanced to moderate)"
+        }
+      ]
+    },
+    {
+      "id": "f-selling",
+      "field": "selling",
+      "value": true,
+      "source_file": "report_request.docx",
+      "excerpt": "selling = True",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": true,
+          "kind": null,
+          "excerpt": "selling = True"
+        }
+      ]
+    },
+    {
+      "id": "f-snapshot_date",
+      "field": "snapshot_date",
+      "value": "2026-04-30",
+      "source_file": "client_data_db.json",
+      "excerpt": "snapshot_date = 2026-04-30",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "2026-04-30",
+          "kind": null,
+          "excerpt": "snapshot_date = 2026-04-30"
+        }
+      ]
+    },
+    {
+      "id": "f-source_of_funds",
+      "field": "source_of_funds",
+      "value": "Proceeds from the sale of the client's business",
+      "source_file": "report_request.docx",
+      "excerpt": "source_of_funds = Proceeds from the sale of the client's business",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "Proceeds from the sale of the client's business",
+          "kind": null,
+          "excerpt": "source_of_funds = Proceeds from the sale of the client's business"
+        }
+      ]
+    },
+    {
+      "id": "f-dispose-h4-gia-hj",
+      "field": "dispose",
+      "value": "disinvest a portion of the Holloway joint GIA",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "we agreed to disinvest a portion of the Holloway joint GIA and rebalance it; that sale is a disposal and will have a capital gains position to set out.",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H4-GIA-HJ",
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "disinvest a portion of the Holloway joint GIA",
+          "kind": null,
+          "excerpt": "we agreed to disinvest a portion of the Holloway joint GIA and rebalance it; that sale is a disposal and will have a capital gains position to set out."
+        }
+      ]
+    },
+    {
+      "id": "f-retain-m4-bond-j",
+      "field": "retain",
+      "value": "leave the offshore bond as it is",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "we agreed to leave it as it is for now and revisit at the next review.",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-BOND-J",
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "leave the offshore bond as it is",
+          "kind": null,
+          "excerpt": "we agreed to leave it as it is for now and revisit at the next review."
+        }
+      ]
+    },
+    {
+      "id": "f-confirm-m4-cash-c",
+      "field": "confirm",
+      "value": "confirm Caroline's Meridian cash balance",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "confirm Caroline's Meridian cash balance.",
+      "conflict": false,
+      "kind": null,
+      "account_id": "M4-CASH-C",
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "confirm Caroline's Meridian cash balance",
+          "kind": null,
+          "excerpt": "confirm Caroline's Meridian cash balance."
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "a-contribute-not-agreed",
+      "amount": null,
+      "supports": "f-recommendation_summary",
+      "who": "ISA and SIPP top-ups, contribution to the joint GIA, and a new joint investment account",
+      "product": "ISA and SIPP top-ups, contribution to the joint GIA, and a new joint investment account",
+      "source_of_funds": "Proceeds from the sale of the client's business",
+      "summary": "We agreed to use both ISA allowances for the new tax year, make pension contributions into both SIPPs up to the appropriate level, add to the Holloway joint GIA, and place the remaining balance into a new jointly-held investment account.",
+      "amount_status": "not_agreed"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "d-contribute-not-agreed",
+      "type": "contribute",
+      "status": "agreed",
+      "supports": "f-recommendation_summary",
+      "subject": "We agreed to use both ISA allowances for the new tax year, make pension contributions into both SIPPs up to the appropriate level, add to the Holloway joint GIA, and place the remaining balance into a new jointly-held investment account.",
+      "amount": null,
+      "amount_status": "not_agreed"
+    },
+    {
+      "id": "d-dispose-h4-gia-hj",
+      "type": "dispose",
+      "status": "agreed",
+      "supports": "f-dispose-h4-gia-hj",
+      "target_account_id": "H4-GIA-HJ",
+      "subject": "disinvest a portion of the Holloway joint GIA"
+    },
+    {
+      "id": "d-retain-m4-bond-j",
+      "type": "retain",
+      "status": "agreed",
+      "supports": "f-retain-m4-bond-j",
+      "target_account_id": "M4-BOND-J",
+      "subject": "leave the offshore bond as it is"
+    },
+    {
+      "id": "d-confirm-m4-cash-c",
+      "type": "confirm",
+      "status": "outstanding",
+      "supports": "f-confirm-m4-cash-c",
+      "target_account_id": "M4-CASH-C",
+      "subject": "confirm Caroline's Meridian cash balance"
+    }
+  ],
+  "sections": {
+    "summary": {
+      "fact_ids": [
+        "f-circumstances",
+        "f-objectives"
+      ]
+    },
+    "recommendation": {
+      "items": [
+        {
+          "action_id": "a-contribute-not-agreed",
+          "text": "We agreed to use both ISA allowances for the new tax year, make pension contributions into both SIPPs up to the appropriate level, add to the Holloway joint GIA, and place the remaining balance into a new jointly-held investment account. The amounts have not yet been finalised. Source of funds: proceeds from the sale of the client's business."
+        }
+      ]
+    }
+  },
+  "selling": true,
+  "conflicts": [
+    {
+      "field": "account_value:H4-GIA-HJ",
+      "details": "db@2026-02-28=240000.0 (client_data_db.json); meeting@2026-05-20=255000 (meeting_notes.docx) quote=\"pulling it up live, it was showing around £255,000.\""
+    }
+  ],
+  "review_items": [
+    "[REVIEW: M4-CASH-C value]",
+    "[REVIEW: platform fee]",
+    "[REVIEW: advice fee]",
+    "[REVIEW: CGT figure]"
+  ],
+  "accounts": [
+    {
+      "account_id": "B4-GIA-J",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Joint",
+      "owner_source": "db",
+      "platform": "Brightwell",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "General Investment Account",
+      "type_source": "db",
+      "value": 95000.0,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false
+    },
+    {
+      "account_id": "B4-SIPP-C",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Caroline Whitmore",
+      "owner_source": "db",
+      "platform": "Brightwell",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "SIPP",
+      "type_source": "db",
+      "value": 430000.0,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false
+    },
+    {
+      "account_id": "B4-SIPP-J",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "James Whitmore",
+      "owner_source": "db",
+      "platform": "Brightwell",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "SIPP",
+      "type_source": "db",
+      "value": 610000.0,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false
+    },
+    {
+      "account_id": "H4-GIA-HJ",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Joint",
+      "owner_source": "db",
+      "platform": "Holloway",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "General Investment Account",
+      "type_source": "db",
+      "value": 255000,
+      "value_source": "meeting",
+      "value_source_file": "meeting_notes.docx",
+      "as_of": "2026-05-20",
+      "value_conflict": true,
+      "needs_review": true,
+      "approximate": true,
+      "value_alternates": [
+        {
+          "value": 240000.0,
+          "source_role": "db",
+          "source_file": "client_data_db.json",
+          "as_of": "2026-02-28",
+          "quote": null
+        }
+      ]
+    },
+    {
+      "account_id": "H4-ISA-C",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Caroline Whitmore",
+      "owner_source": "db",
+      "platform": "Holloway",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "Stocks & Shares ISA",
+      "type_source": "db",
+      "value": 82000.0,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false
+    },
+    {
+      "account_id": "H4-ISA-J",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "James Whitmore",
+      "owner_source": "db",
+      "platform": "Holloway",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "Stocks & Shares ISA",
+      "type_source": "db",
+      "value": 85000.0,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false
+    },
+    {
+      "account_id": "M4-BOND-J",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Joint",
+      "owner_source": "db",
+      "platform": "Meridian",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "Offshore Investment Bond",
+      "type_source": "db",
+      "value": 180000.0,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false
+    },
+    {
+      "account_id": "M4-CASH-C",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Caroline Whitmore",
+      "owner_source": "db",
+      "platform": "Meridian",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "Cash Account",
+      "type_source": "db",
+      "value": null,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false,
+      "needs_review": true
+    },
+    {
+      "account_id": "M4-CASH-J",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "James Whitmore",
+      "owner_source": "db",
+      "platform": "Meridian",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "Cash Account",
+      "type_source": "db",
+      "value": 30000.0,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false
+    },
+    {
+      "account_id": "M4-OLD-C",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Caroline Whitmore",
+      "owner_source": "db",
+      "platform": "Meridian",
+      "platform_source": "db",
+      "status": "closed",
+      "status_source": "db",
+      "type": "Cash Account",
+      "type_source": "db",
+      "value": 0.0,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2025-11-30",
+      "value_conflict": false
+    }
+  ]
+}

@@ -1,0 +1,936 @@
+{
+  "run": {
+    "label": "client_03_hard",
+    "recorded_at": "2026-09-25T16:40:56",
+    "model": "gpt-4o-mini",
+    "config_sha": "a483f28c980ef0ea7391f83b1fb246ffd95bc7b43a5228618e791f3e04a824cf",
+    "git_rev": "17a38e4"
+  },
+  "sources": [
+    {
+      "file": "client_data_db.json",
+      "role": "db",
+      "status": "parsed"
+    },
+    {
+      "file": "fde_notes.md",
+      "role": "internal",
+      "status": "parsed"
+    },
+    {
+      "file": "meeting_notes.docx",
+      "role": "meeting",
+      "status": "parsed"
+    },
+    {
+      "file": "platform_market_update.docx",
+      "role": "noise",
+      "status": "parsed"
+    },
+    {
+      "file": "portfolio_pack.docx",
+      "role": "noise",
+      "status": "parsed"
+    },
+    {
+      "file": "report_request.docx",
+      "role": "request",
+      "status": "parsed"
+    },
+    {
+      "file": "statement_summary.png",
+      "role": "noise",
+      "status": "skipped"
+    },
+    {
+      "file": "template_spec.md",
+      "role": "internal",
+      "status": "parsed"
+    }
+  ],
+  "facts": [
+    {
+      "id": "f-account-H-CASH-JE-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency H-CASH-JE = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-CASH-JE",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency H-CASH-JE = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-GIA-JF-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency H-GIA-JF = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-GIA-JF",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency H-GIA-JF = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-JE-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency H-ISA-JE = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-JE",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency H-ISA-JE = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-R-account_currency",
+      "field": "account_currency",
+      "value": "GBP",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_currency H-ISA-R = GBP",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-R",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "GBP",
+          "kind": null,
+          "excerpt": "account_currency H-ISA-R = GBP"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-CASH-JE-account_owner",
+      "field": "account_owner",
+      "value": "Jean Fletcher",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner H-CASH-JE = Jean Fletcher",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-CASH-JE",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Jean Fletcher",
+          "kind": null,
+          "excerpt": "account_owner H-CASH-JE = Jean Fletcher"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-GIA-JF-account_owner",
+      "field": "account_owner",
+      "value": "Joint",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner H-GIA-JF = Joint",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-GIA-JF",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Joint",
+          "kind": null,
+          "excerpt": "account_owner H-GIA-JF = Joint"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-JE-account_owner",
+      "field": "account_owner",
+      "value": "Jean Fletcher",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner H-ISA-JE = Jean Fletcher",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-JE",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Jean Fletcher",
+          "kind": null,
+          "excerpt": "account_owner H-ISA-JE = Jean Fletcher"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-R-account_owner",
+      "field": "account_owner",
+      "value": "Robert Fletcher",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_owner H-ISA-R = Robert Fletcher",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-R",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Robert Fletcher",
+          "kind": null,
+          "excerpt": "account_owner H-ISA-R = Robert Fletcher"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-CASH-JE-account_platform",
+      "field": "account_platform",
+      "value": "Holloway",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform H-CASH-JE = Holloway",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-CASH-JE",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Holloway",
+          "kind": null,
+          "excerpt": "account_platform H-CASH-JE = Holloway"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-GIA-JF-account_platform",
+      "field": "account_platform",
+      "value": "Holloway",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform H-GIA-JF = Holloway",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-GIA-JF",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Holloway",
+          "kind": null,
+          "excerpt": "account_platform H-GIA-JF = Holloway"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-JE-account_platform",
+      "field": "account_platform",
+      "value": "Holloway",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform H-ISA-JE = Holloway",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-JE",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Holloway",
+          "kind": null,
+          "excerpt": "account_platform H-ISA-JE = Holloway"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-R-account_platform",
+      "field": "account_platform",
+      "value": "Holloway",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_platform H-ISA-R = Holloway",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-R",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Holloway",
+          "kind": null,
+          "excerpt": "account_platform H-ISA-R = Holloway"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-CASH-JE-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status H-CASH-JE = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-CASH-JE",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status H-CASH-JE = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-GIA-JF-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status H-GIA-JF = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-GIA-JF",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status H-GIA-JF = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-JE-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status H-ISA-JE = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-JE",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status H-ISA-JE = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-R-account_status",
+      "field": "account_status",
+      "value": "open",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_status H-ISA-R = open",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-R",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "open",
+          "kind": null,
+          "excerpt": "account_status H-ISA-R = open"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-CASH-JE-account_type",
+      "field": "account_type",
+      "value": "Cash Account",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type H-CASH-JE = Cash Account",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-CASH-JE",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Cash Account",
+          "kind": null,
+          "excerpt": "account_type H-CASH-JE = Cash Account"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-GIA-JF-account_type",
+      "field": "account_type",
+      "value": "General Investment Account",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type H-GIA-JF = General Investment Account",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-GIA-JF",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "General Investment Account",
+          "kind": null,
+          "excerpt": "account_type H-GIA-JF = General Investment Account"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-JE-account_type",
+      "field": "account_type",
+      "value": "Stocks & Shares ISA",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type H-ISA-JE = Stocks & Shares ISA",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-JE",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Stocks & Shares ISA",
+          "kind": null,
+          "excerpt": "account_type H-ISA-JE = Stocks & Shares ISA"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-R-account_type",
+      "field": "account_type",
+      "value": "Stocks & Shares ISA",
+      "source_file": "client_data_db.json",
+      "excerpt": "account_type H-ISA-R = Stocks & Shares ISA",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-ISA-R",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "Stocks & Shares ISA",
+          "kind": null,
+          "excerpt": "account_type H-ISA-R = Stocks & Shares ISA"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-GIA-JF-account_balance",
+      "field": "account_value",
+      "value": 38000,
+      "source_file": "meeting_notes.docx",
+      "excerpt": "Pulling it up during the meeting, it was showing around £38,000, a little higher than the figure on the last statement they had to hand.",
+      "conflict": true,
+      "kind": "account_balance",
+      "account_id": "H-GIA-JF",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 30000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance H-GIA-JF = 30000.0"
+        },
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": 38000,
+          "kind": "account_balance",
+          "excerpt": "Pulling it up during the meeting, it was showing around £38,000, a little higher than the figure on the last statement they had to hand."
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-JE-account_balance",
+      "field": "account_value",
+      "value": 66000.0,
+      "source_file": "client_data_db.json",
+      "excerpt": "account_balance H-ISA-JE = 66000.0",
+      "conflict": false,
+      "kind": "account_balance",
+      "account_id": "H-ISA-JE",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 66000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance H-ISA-JE = 66000.0"
+        }
+      ]
+    },
+    {
+      "id": "f-account-H-ISA-R-account_balance",
+      "field": "account_value",
+      "value": 70000.0,
+      "source_file": "client_data_db.json",
+      "excerpt": "account_balance H-ISA-R = 70000.0",
+      "conflict": false,
+      "kind": "account_balance",
+      "account_id": "H-ISA-R",
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": 70000.0,
+          "kind": "account_balance",
+          "excerpt": "account_balance H-ISA-R = 70000.0"
+        }
+      ]
+    },
+    {
+      "id": "f-accounts_covered",
+      "field": "accounts_covered",
+      "value": "Holloway ISAs (Robert and Jean), the joint GIA, and a new joint account",
+      "source_file": "report_request.docx",
+      "excerpt": "accounts_covered = Holloway ISAs (Robert and Jean), the joint GIA, and a new joint account",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "Holloway ISAs (Robert and Jean), the joint GIA, and a new joint account",
+          "kind": null,
+          "excerpt": "accounts_covered = Holloway ISAs (Robert and Jean), the joint GIA, and a new joint account"
+        }
+      ]
+    },
+    {
+      "id": "f-circumstances",
+      "field": "circumstances",
+      "value": "Jean has received an inheritance of around £120,000 from her late mother's estate, which has now cleared.",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "Jean has received an inheritance of around £120,000 from her late mother's estate, which has now cleared.",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "Jean has received an inheritance of around £120,000 from her late mother's estate, which has now cleared.",
+          "kind": null,
+          "excerpt": "Jean has received an inheritance of around £120,000 from her late mother's estate, which has now cleared."
+        }
+      ]
+    },
+    {
+      "id": "f-initial_charge",
+      "field": "initial_charge",
+      "value": "0.5%",
+      "source_file": "report_request.docx",
+      "excerpt": "initial_charge = 0.5%",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "0.5%",
+          "kind": null,
+          "excerpt": "initial_charge = 0.5%"
+        }
+      ]
+    },
+    {
+      "id": "f-investment_amount",
+      "field": "investment_amount",
+      "value": "GBP 120,000 inheritance plus the full joint GIA value",
+      "source_file": "report_request.docx",
+      "excerpt": "transfer_amount = GBP 120,000 inheritance plus the full joint GIA value",
+      "conflict": false,
+      "kind": "transfer_amount",
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "GBP 120,000 inheritance plus the full joint GIA value",
+          "kind": "transfer_amount",
+          "excerpt": "transfer_amount = GBP 120,000 inheritance plus the full joint GIA value"
+        }
+      ]
+    },
+    {
+      "id": "f-objectives",
+      "field": "objectives",
+      "value": "long-term growth, with no income required from the portfolio for the foreseeable future.",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "Their objectives are unchanged from the last review: long-term growth, with no income required from the portfolio for the foreseeable future.",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "long-term growth, with no income required from the portfolio for the foreseeable future.",
+          "kind": null,
+          "excerpt": "Their objectives are unchanged from the last review: long-term growth, with no income required from the portfolio for the foreseeable future."
+        }
+      ]
+    },
+    {
+      "id": "f-ownership",
+      "field": "ownership",
+      "value": "Joint clients, individual ISAs plus a joint account",
+      "source_file": "report_request.docx",
+      "excerpt": "ownership = Joint clients, individual ISAs plus a joint account",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "Joint clients, individual ISAs plus a joint account",
+          "kind": null,
+          "excerpt": "ownership = Joint clients, individual ISAs plus a joint account"
+        }
+      ]
+    },
+    {
+      "id": "f-product",
+      "field": "product",
+      "value": "ISA top-ups and a new joint investment account",
+      "source_file": "report_request.docx",
+      "excerpt": "product = ISA top-ups and a new joint investment account",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "ISA top-ups and a new joint investment account",
+          "kind": null,
+          "excerpt": "product = ISA top-ups and a new joint investment account"
+        }
+      ]
+    },
+    {
+      "id": "f-received_proceeds",
+      "field": "received_proceeds",
+      "value": 120000,
+      "source_file": "meeting_notes.docx",
+      "excerpt": "Jean has received an inheritance of around £120,000 from her late mother's estate, which has now cleared.",
+      "conflict": false,
+      "kind": "received_proceeds",
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": 120000,
+          "kind": "received_proceeds",
+          "excerpt": "Jean has received an inheritance of around £120,000 from her late mother's estate, which has now cleared."
+        }
+      ]
+    },
+    {
+      "id": "f-recommendation_summary",
+      "field": "recommendation_summary",
+      "value": "disinvest the joint GIA, and together with the inheritance, fund both Robert's and Jean's ISAs for the new tax year and open a new jointly-held investment account for the balance.",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "The plan we agreed: disinvest the joint GIA, and together with the inheritance, fund both Robert's and Jean's ISAs for the new tax year and open a new jointly-held investment account for the balance.",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "disinvest the joint GIA, and together with the inheritance, fund both Robert's and Jean's ISAs for the new tax year and open a new jointly-held investment account for the balance.",
+          "kind": null,
+          "excerpt": "The plan we agreed: disinvest the joint GIA, and together with the inheritance, fund both Robert's and Jean's ISAs for the new tax year and open a new jointly-held investment account for the balance."
+        }
+      ]
+    },
+    {
+      "id": "f-risk_profile",
+      "field": "risk_profile",
+      "value": "4 (moderate)",
+      "source_file": "report_request.docx",
+      "excerpt": "risk_profile = 4 (moderate)",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "4 (moderate)",
+          "kind": null,
+          "excerpt": "risk_profile = 4 (moderate)"
+        }
+      ]
+    },
+    {
+      "id": "f-selling",
+      "field": "selling",
+      "value": true,
+      "source_file": "report_request.docx",
+      "excerpt": "selling = True",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": true,
+          "kind": null,
+          "excerpt": "selling = True"
+        }
+      ]
+    },
+    {
+      "id": "f-snapshot_date",
+      "field": "snapshot_date",
+      "value": "2026-04-30",
+      "source_file": "client_data_db.json",
+      "excerpt": "snapshot_date = 2026-04-30",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "client_data_db.json",
+          "source_role": "db",
+          "value": "2026-04-30",
+          "kind": null,
+          "excerpt": "snapshot_date = 2026-04-30"
+        }
+      ]
+    },
+    {
+      "id": "f-source_of_funds",
+      "field": "source_of_funds",
+      "value": "Inheritance (Jean) and the joint General Investment Account",
+      "source_file": "report_request.docx",
+      "excerpt": "source_of_funds = Inheritance (Jean) and the joint General Investment Account",
+      "conflict": false,
+      "kind": null,
+      "account_id": null,
+      "evidence": [
+        {
+          "source_file": "report_request.docx",
+          "source_role": "request",
+          "value": "Inheritance (Jean) and the joint General Investment Account",
+          "kind": null,
+          "excerpt": "source_of_funds = Inheritance (Jean) and the joint General Investment Account"
+        }
+      ]
+    },
+    {
+      "id": "f-dispose-h-gia-jf",
+      "field": "dispose",
+      "value": "disinvest the joint GIA",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "The plan we agreed: disinvest the joint GIA, and together with the inheritance, fund both Robert's and Jean's ISAs for the new tax year and open a new jointly-held investment account for the balance.",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-GIA-JF",
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "disinvest the joint GIA",
+          "kind": null,
+          "excerpt": "The plan we agreed: disinvest the joint GIA, and together with the inheritance, fund both Robert's and Jean's ISAs for the new tax year and open a new jointly-held investment account for the balance."
+        }
+      ]
+    },
+    {
+      "id": "f-confirm-h-cash-je",
+      "field": "confirm",
+      "value": "confirm the outstanding cash balance",
+      "source_file": "meeting_notes.docx",
+      "excerpt": "She will dig out the paperwork and we will confirm it before anything is finalised.",
+      "conflict": false,
+      "kind": null,
+      "account_id": "H-CASH-JE",
+      "evidence": [
+        {
+          "source_file": "meeting_notes.docx",
+          "source_role": "meeting",
+          "value": "confirm the outstanding cash balance",
+          "kind": null,
+          "excerpt": "She will dig out the paperwork and we will confirm it before anything is finalised."
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "a-contribute-not-agreed",
+      "amount": null,
+      "supports": "f-recommendation_summary",
+      "who": "ISA top-ups and a new joint investment account",
+      "product": "ISA top-ups and a new joint investment account",
+      "source_of_funds": "Inheritance (Jean) and the joint General Investment Account",
+      "summary": "disinvest the joint GIA, and together with the inheritance, fund both Robert's and Jean's ISAs for the new tax year and open a new jointly-held investment account for the balance.",
+      "amount_status": "not_agreed"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "d-contribute-not-agreed",
+      "type": "contribute",
+      "status": "agreed",
+      "supports": "f-recommendation_summary",
+      "subject": "disinvest the joint GIA, and together with the inheritance, fund both Robert's and Jean's ISAs for the new tax year and open a new jointly-held investment account for the balance.",
+      "amount": null,
+      "amount_status": "not_agreed"
+    },
+    {
+      "id": "d-dispose-h-gia-jf",
+      "type": "dispose",
+      "status": "agreed",
+      "supports": "f-dispose-h-gia-jf",
+      "target_account_id": "H-GIA-JF",
+      "subject": "disinvest the joint GIA"
+    },
+    {
+      "id": "d-confirm-h-cash-je",
+      "type": "confirm",
+      "status": "outstanding",
+      "supports": "f-confirm-h-cash-je",
+      "target_account_id": "H-CASH-JE",
+      "subject": "confirm the outstanding cash balance"
+    }
+  ],
+  "sections": {
+    "summary": {
+      "fact_ids": [
+        "f-circumstances",
+        "f-objectives"
+      ]
+    },
+    "recommendation": {
+      "items": [
+        {
+          "action_id": "a-contribute-not-agreed",
+          "text": "disinvest the joint GIA, and together with the inheritance, fund both Robert's and Jean's ISAs for the new tax year and open a new jointly-held investment account for the balance. The amounts have not yet been finalised. Source of funds: inheritance (Jean) and the joint General Investment Account."
+        }
+      ]
+    }
+  },
+  "selling": true,
+  "conflicts": [
+    {
+      "field": "account_value:H-GIA-JF",
+      "details": "db@2026-03-10=30000.0 (client_data_db.json); meeting@2026-05-16=38000 (meeting_notes.docx) quote=\"Pulling it up during the meeting, it was showing around £38,000, a little higher than the figure on the last statement they had to hand.\""
+    }
+  ],
+  "review_items": [
+    "[REVIEW: H-CASH-JE value]",
+    "[REVIEW: platform fee]",
+    "[REVIEW: advice fee]",
+    "[REVIEW: CGT figure]"
+  ],
+  "accounts": [
+    {
+      "account_id": "H-CASH-JE",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Jean Fletcher",
+      "owner_source": "db",
+      "platform": "Holloway",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "Cash Account",
+      "type_source": "db",
+      "value": null,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false,
+      "needs_review": true
+    },
+    {
+      "account_id": "H-GIA-JF",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Joint",
+      "owner_source": "db",
+      "platform": "Holloway",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "General Investment Account",
+      "type_source": "db",
+      "value": 38000,
+      "value_source": "meeting",
+      "value_source_file": "meeting_notes.docx",
+      "as_of": "2026-05-16",
+      "value_conflict": true,
+      "needs_review": true,
+      "approximate": true,
+      "value_alternates": [
+        {
+          "value": 30000.0,
+          "source_role": "db",
+          "source_file": "client_data_db.json",
+          "as_of": "2026-03-10",
+          "quote": null
+        }
+      ]
+    },
+    {
+      "account_id": "H-ISA-JE",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Jean Fletcher",
+      "owner_source": "db",
+      "platform": "Holloway",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "Stocks & Shares ISA",
+      "type_source": "db",
+      "value": 66000.0,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false
+    },
+    {
+      "account_id": "H-ISA-R",
+      "currency": "GBP",
+      "currency_source": "db",
+      "owner": "Robert Fletcher",
+      "owner_source": "db",
+      "platform": "Holloway",
+      "platform_source": "db",
+      "status": "open",
+      "status_source": "db",
+      "type": "Stocks & Shares ISA",
+      "type_source": "db",
+      "value": 70000.0,
+      "value_source": "db",
+      "value_source_file": "client_data_db.json",
+      "as_of": "2026-04-30",
+      "value_conflict": false
+    }
+  ]
+}
