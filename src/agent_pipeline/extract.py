@@ -71,9 +71,11 @@ Rules:
   transfer as account_balance.
 - Every £ amount is its own observation. value is that number only, with one kind.
   A second amount in the same sentence is a second observation. Do not give both amounts the same kind
-  unless the note applies that kind to each of them. Money received is received_proceeds. Money
-  already committed to a repayment is loan_repayment. Money that is contingent or not guaranteed
-  is contingent_proceeds and is not a transfer.
+  unless the note applies that kind to each of them. Money received, including an inheritance or
+  completion payment that has cleared, is received_proceeds and is not circumstances. Money
+  already committed to a repayment is loan_repayment. When a repayment is part of a larger sum
+  already received, emit both observations. The receipt's quote must be a sentence that states
+  the receipt. Money that is contingent or not guaranteed is contingent_proceeds and is not a transfer.
 - approximate is true when the note uses hedging language (around, about, a little over, etc.).
 - Prefer the meeting_date for as_of on meeting figures when a specific date is not given.
 - Do not invent fees, tax figures, or amounts not in the note.
@@ -504,12 +506,14 @@ def extract_meeting_observations(
     if not payload:
         return []
     extracted = MeetingExtract.from_payload(payload)
-    return _observations_from_extract(
-        extracted,
-        source_role="meeting",
-        source_file=source_file,
-        default_as_of=extracted.meeting_date,
-        known_account_ids=known_ids or None,
+    return detach_narrative_amounts(
+        _observations_from_extract(
+            extracted,
+            source_role="meeting",
+            source_file=source_file,
+            default_as_of=extracted.meeting_date,
+            known_account_ids=known_ids or None,
+        )
     )
 
 
@@ -534,6 +538,78 @@ def _llm_structured_fallback(
         source_role=source_role,
         source_file=source_file,
     )
+
+
+_RECEIPT_CUES = ("received", "completion payment", "has now cleared")
+_REPAYMENT_CUES = ("repay", "repayment", "committed to")
+_CONTINGENT_CUES = ("contingent", "earnout", "not guaranteed")
+_TRANSFER_CUES = ("move ", "moving", "transfer", "top up", "top-up", "invest", "withdraw")
+_BALANCE_CUES = ("showing", "balance", "worth")
+
+
+def _kind_for_money_sentence(text: str) -> MoneyKind | None:
+    """Kind for a narrative sentence that states one sum. The cues are the note's own words."""
+    lowered = text.lower()
+    if any(cue in lowered for cue in _CONTINGENT_CUES):
+        return "contingent_proceeds"
+    if any(cue in lowered for cue in _REPAYMENT_CUES):
+        return "loan_repayment"
+    if any(cue in lowered for cue in _RECEIPT_CUES):
+        return "received_proceeds"
+    if any(cue in lowered for cue in _TRANSFER_CUES):
+        return "transfer_amount"
+    if any(cue in lowered for cue in _BALANCE_CUES):
+        return "account_balance"
+    return None
+
+
+def detach_narrative_amounts(observations: list[Observation]) -> list[Observation]:
+    """A £ figure inside a narrative sentence becomes its own money observation.
+
+    The sentence stays, without a money kind. A second amount in a repayment quote is not
+    labelled a receipt here; that receipt has to be its own observation.
+    """
+    from agent_pipeline.reconcile import pound_amounts
+
+    out = list(observations)
+    seen = {
+        (obs.kind, _amount_key(obs.value))
+        for obs in observations
+        if obs.kind in MONEY_KINDS and _amount_key(obs.value) is not None
+    }
+    for obs in observations:
+        if obs.field not in _NARRATIVE_FIELDS:
+            continue
+        text = " ".join(part for part in (str(obs.value or ""), obs.quote or "") if part)
+        kind = _kind_for_money_sentence(text)
+        if kind is None:
+            continue
+        for amount in pound_amounts(text):
+            key = (kind, _amount_key(amount))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(
+                observation(
+                    field=kind,
+                    value=amount,
+                    source_role=obs.source_role,
+                    source_file=obs.source_file,
+                    as_of=obs.as_of,
+                    quote=obs.quote or str(obs.value or ""),
+                    approximate=obs.approximate or "around" in text.lower() or "about" in text.lower(),
+                    kind=kind,
+                )
+            )
+    return out
+
+
+def _amount_key(value: Any) -> int | None:
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return int(round(float(value)))
+    return None
 
 
 def _known_accounts_from_db_obs(observations: list[Observation]) -> list[KnownAccount]:

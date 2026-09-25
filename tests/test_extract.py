@@ -10,6 +10,7 @@ from agent_pipeline.extract import (
     extract_observations,
     extract_request_observations,
     meeting_decisions_from_payload,
+    observation,
     parse_db_accounts,
     parse_request_kv_lines,
 )
@@ -204,6 +205,55 @@ def test_extract_meeting_uses_llm_and_provenance() -> None:
     assert by_field["account_value"].value == 45000
     assert by_field["account_value"].account_id == "H-GIA-J"
     assert by_field["account_value"].as_of == "2026-05-14"
+
+
+def test_received_sum_inside_circumstances_becomes_its_own_fact() -> None:
+    from agent_pipeline.extract import detach_narrative_amounts
+
+    note = (
+        "Jean has received an inheritance of around £120,000 from her late mother's estate, "
+        "which has now cleared."
+    )
+    client = _mock_llm(
+        {
+            "meeting_date": "2026-05-16",
+            "observations": [
+                {
+                    "field": "circumstances",
+                    "value": "Jean's mother had passed away earlier in the spring.",
+                    "quote": "I started by acknowledging that Jean's mother had passed away earlier in the spring.",
+                    "account_id": None,
+                    "as_of": None,
+                },
+                {
+                    "field": "circumstances",
+                    "value": "Jean has received an inheritance of around £120,000 from her late mother's estate.",
+                    "quote": note,
+                    "account_id": None,
+                    "as_of": None,
+                },
+            ],
+        }
+    )
+    obs = extract_meeting_observations(note, "meeting_notes.docx", openai_client=client, model="test")
+    receipt = next(item for item in obs if item.kind == "received_proceeds")
+    assert receipt.value == 120000
+    assert receipt.field == "received_proceeds"
+    assert receipt.approximate is True
+    circumstances = [item for item in obs if item.field == "circumstances"]
+    assert len(circumstances) == 2
+    assert all(item.kind is None for item in circumstances)
+    untouched = detach_narrative_amounts(
+        [
+            observation(
+                field="circumstances",
+                value="Retired, with no changes.",
+                source_role="meeting",
+                source_file="meeting_notes.docx",
+            )
+        ]
+    )
+    assert len(untouched) == 1
 
 
 def test_narrative_field_drops_money_kind() -> None:

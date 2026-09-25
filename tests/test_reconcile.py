@@ -214,15 +214,14 @@ def test_kind_is_not_copied_onto_every_amount_in_a_quote() -> None:
     assert case.actions == []
 
 
-def test_repayment_of_a_larger_figure_keeps_that_figure() -> None:
+def test_repayment_quote_does_not_invent_the_larger_figure() -> None:
     repayment = _obs("loan_repayment", 200000, "meeting")
     repayment.kind = "loan_repayment"
     repayment.quote = "£200,000 of the £850,000 is already committed to repaying a bridging loan."
     case = build_case_document(reconcile_observations([repayment]), {})
     kinds = {(fact.value, fact.kind) for fact in case.facts}
     assert (200000, "loan_repayment") in kinds or (200000.0, "loan_repayment") in kinds
-    assert (850000, "received_proceeds") in kinds or (850000.0, "received_proceeds") in kinds
-    assert not any(fact.kind == "loan_repayment" and fact.value in {850000, 850000.0} for fact in case.facts)
+    assert not any(fact.kind == "received_proceeds" for fact in case.facts)
     assert case.actions == []
 
 

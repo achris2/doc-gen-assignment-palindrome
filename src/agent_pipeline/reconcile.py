@@ -191,8 +191,6 @@ def reconcile_observations(observations: list[Observation]) -> ReconciledFacts:
             continue
         filtered.extend(_unscoped_money(obs))
 
-    filtered = _with_pool_amounts(filtered)
-
     groups: dict[tuple[str, str | None, str | None], list[Observation]] = {}
     for obs in filtered:
         if not obs.field:
@@ -450,31 +448,6 @@ def _distinct_amounts(obs: Observation) -> list[float]:
         if all(values_materially_differ(amount, seen) for seen in found):
             found.append(amount)
     return found
-
-
-def _with_pool_amounts(observations: list[Observation]) -> list[Observation]:
-    """A repayment described as part of a larger figure keeps that figure as its own fact."""
-    out = list(observations)
-    for obs in observations:
-        stated = _to_number(obs.value)
-        if obs.kind != "loan_repayment" or stated is None:
-            continue
-        for amount in pound_amounts(obs.quote or ""):
-            token = f"{int(amount):,}" if amount == int(amount) else str(amount)
-            if values_materially_differ(amount, stated) and f"of the £{token}" in (obs.quote or ""):
-                out.append(
-                    Observation(
-                        field="received_proceeds",
-                        value=amount,
-                        source_role=obs.source_role,
-                        source_file=obs.source_file,
-                        as_of=obs.as_of,
-                        quote=obs.quote,
-                        approximate=obs.approximate,
-                        kind="received_proceeds",
-                    )
-                )
-    return out
 
 
 def _unscoped_money(obs: Observation) -> list[Observation]:

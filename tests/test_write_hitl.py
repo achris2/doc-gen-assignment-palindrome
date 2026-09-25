@@ -84,6 +84,9 @@ def test_risk_profile_line_is_the_stored_fact_and_skips_a_conflict() -> None:
 
 
 def test_context_paragraph_links_a_repayment_to_its_pool() -> None:
+    received = _obs("received_proceeds", 850000, "meeting", source_file="meeting_notes.docx")
+    received.kind = "received_proceeds"
+    received.quote = "A completion payment of £850,000 was received on completion."
     repayment = _obs("loan_repayment", 200000, "meeting", source_file="meeting_notes.docx")
     repayment.kind = "loan_repayment"
     repayment.quote = (
@@ -92,7 +95,7 @@ def test_context_paragraph_links_a_repayment_to_its_pool() -> None:
     )
     contingent = _obs("contingent_proceeds", 400000, "meeting", source_file="meeting_notes.docx")
     contingent.kind = "contingent_proceeds"
-    case = build_case_document(reconcile_observations([repayment, contingent]), {})
+    case = build_case_document(reconcile_observations([received, repayment, contingent]), {})
     text = render_material_context(case.facts)
     assert "£850,000 completion money received" in text
     assert "£200,000 is not available to invest because it is committed to repaying a bridging loan" in text
