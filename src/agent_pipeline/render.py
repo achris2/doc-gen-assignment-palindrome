@@ -208,6 +208,21 @@ def render_material_context(facts: list[Any]) -> str:
     return " ".join(sentences)
 
 
+def render_risk_profile_line(facts: list[Any]) -> str:
+    """One sentence when a risk profile is known and not in conflict. No suitability rationale."""
+    fact = next((item for item in facts if getattr(item, "field", None) == "risk_profile"), None)
+    if fact is None or getattr(fact, "conflict", False):
+        return ""
+    text = str(getattr(fact, "value", "") or "").strip()
+    match = re.fullmatch(r"(\d+)\s*(?:\(([^)]+)\))?", text)
+    if not match:
+        return ""
+    number, described = match.group(1), (match.group(2) or "").strip()
+    if described:
+        return f"Your risk profile is {number}, described as {described}."
+    return f"Your risk profile is {number}."
+
+
 def render_cgt_statement(_facts: ReconciledFacts) -> str:
     return (
         "The disposal may create a capital gains tax liability, which will be "

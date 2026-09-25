@@ -16,6 +16,7 @@ from agent_pipeline.render import (
     render_cgt_statement,
     render_fees,
     render_material_context,
+    render_risk_profile_line,
     render_holdings_table,
     render_scope,
 )
@@ -126,7 +127,19 @@ class ReportGenerator:
             case.record_narrative(name, [])
             return f"[REVIEW: {name} uncited]"
         case.record_narrative(name, draft.fact_ids)
+        if name == "summary":
+            return _with_risk_profile(draft.text, case)
         return draft.text
+
+
+def _with_risk_profile(text: str, case: CaseDocument) -> str:
+    line = render_risk_profile_line(case.facts)
+    if not line or line in text:
+        return text
+    body = text.rstrip()
+    if not body:
+        return line
+    return f"{body}\n\n{line}"
 
 
 def _with_context(text: str, case: CaseDocument) -> str:

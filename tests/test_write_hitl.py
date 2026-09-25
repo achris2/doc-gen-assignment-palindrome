@@ -7,6 +7,7 @@ from agent_pipeline.render import (
     render_cgt_statement,
     render_fees,
     render_material_context,
+    render_risk_profile_line,
     render_holdings_table,
     render_scope,
     resolve_scoped_accounts,
@@ -59,6 +60,27 @@ def test_money_projection_keeps_balances_and_movements_out_of_context() -> None:
     transfer.kind = "transfer_amount"
     case = build_case_document(reconcile_observations([balance, transfer]), {})
     assert render_material_context(case.facts) == ""
+
+
+def test_risk_profile_line_is_the_stored_fact_and_skips_a_conflict() -> None:
+    known = _obs("risk_profile", "4 (balanced to moderate)", "request", source_file="report_request.docx")
+    moderate = _obs("risk_profile", "4 (moderate)", "request", source_file="report_request.docx")
+    conflicted = reconcile_observations(
+        [
+            _obs("risk_profile", "4 (moderate)", "request", source_file="report_request.docx"),
+            _obs("risk_profile", "5 (balanced)", "meeting", source_file="meeting.docx"),
+        ]
+    )
+    assert render_risk_profile_line(
+        build_case_document(reconcile_observations([known]), {}).facts
+    ) == "Your risk profile is 4, described as balanced to moderate."
+    assert render_risk_profile_line(
+        build_case_document(reconcile_observations([moderate]), {}).facts
+    ) == "Your risk profile is 4, described as moderate."
+    assert "£" not in render_risk_profile_line(
+        build_case_document(reconcile_observations([known]), {}).facts
+    )
+    assert render_risk_profile_line(build_case_document(conflicted, {}).facts) == ""
 
 
 def test_context_paragraph_links_a_repayment_to_its_pool() -> None:
