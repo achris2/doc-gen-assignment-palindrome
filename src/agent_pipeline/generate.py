@@ -15,6 +15,7 @@ from agent_pipeline.render import (
     facts_context_block,
     render_cgt_statement,
     render_fees,
+    render_funding,
     render_holdings_table,
     render_scope,
 )
@@ -36,6 +37,7 @@ RENDERERS: dict[str, RenderFn] = {
     "scope": render_scope,
     "holdings_table": render_holdings_table,
     "fees": render_fees,
+    "funding": render_funding,
     "cgt_statement": render_cgt_statement,
 }
 _RENDER_NAMES = frozenset(RENDERERS)
@@ -58,12 +60,10 @@ class ReportGenerator:
         for section in config.sections:
             if not section.applies(facts):
                 continue
-            sections.append(
-                {
-                    "title": section.title,
-                    "content": self._build_section(section, facts, case, config.global_instructions),
-                }
-            )
+            content = self._build_section(section, facts, case, config.global_instructions)
+            if not content.strip():
+                continue
+            sections.append({"title": section.title, "content": content})
         return format_document(config.document_dict(), sections)
 
     def _build_section(
@@ -98,6 +98,11 @@ class ReportGenerator:
     def _recommendation_items(
         self, spec: PlaceholderSpec, case: CaseDocument, instructions: str
     ) -> str:
+        if not case.actions:
+            case.record_recommendation([])
+            return "The amounts to be invested have not been fixed."
+        if all(action.amount_status == "not_agreed" for action in case.actions):
+            return _unfixed_recommendation(case)
         payload = self._chat.complete(
             f"{_action_context(case.actions)}\n\n---\n\n{instructions}\n\n{spec.prompt}\n"
             'Return JSON {"items": [{"action_id": "...", "text": "..."}]}. '
@@ -123,6 +128,19 @@ class ReportGenerator:
             return f"[REVIEW: {name} uncited]"
         case.record_narrative(name, draft.fact_ids)
         return draft.text
+
+
+def _unfixed_recommendation(case: CaseDocument) -> str:
+    """Agreed destinations with no figure. The wording is the stored summary."""
+    action = case.actions[0]
+    summary = str(action.summary or "").strip()
+    if summary and not summary.endswith("."):
+        summary += "."
+    text = f"{summary} The amounts have not yet been finalised.".strip()
+    from agent_pipeline.schema import RecommendationItem
+
+    case.record_recommendation([RecommendationItem(action_id=action.id, text=text)])
+    return text
 
 
 def _action_context(actions: list[RecommendationAction]) -> str:

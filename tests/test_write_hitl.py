@@ -6,6 +6,7 @@ from agent_pipeline.render import (
     account_in_scope,
     render_cgt_statement,
     render_fees,
+    render_funding,
     render_holdings_table,
     render_scope,
     resolve_scoped_accounts,
@@ -22,6 +23,18 @@ def _obs(field, value, role, *, source_file, account_id=None, as_of=None):
         account_id=account_id,
         as_of=as_of,
     )
+
+
+def test_funding_lists_flow_kinds_only() -> None:
+    received = _obs("account_value", 850000, "meeting", source_file="meeting_notes.docx")
+    received.kind = "received_proceeds"
+    received.quote = "A completion payment of £850,000 was received."
+    balance = _obs("account_value", 52000, "db", source_file="db.json", account_id="H-ISA-01", as_of="2026-04-30")
+    facts = reconcile_observations([received, balance])
+    text = render_funding(facts)
+    assert "Received: £850,000" in text
+    assert "52,000" not in text
+    assert render_funding(reconcile_observations([balance])) == ""
 
 
 def _sample_facts():

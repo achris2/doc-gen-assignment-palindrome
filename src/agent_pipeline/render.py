@@ -136,6 +136,34 @@ def render_fees(facts: ReconciledFacts) -> str:
     return "\n".join(lines)
 
 
+_FUNDING_LABELS = {
+    "received_proceeds": "Received",
+    "loan_repayment": "Committed repayment",
+    "contingent_proceeds": "Contingent, not available",
+}
+
+
+def render_funding(facts: ReconciledFacts) -> str:
+    """Money that is not a custody balance and not an investment action."""
+    lines = []
+    seen: set[tuple[str, Any]] = set()
+    for item in facts.recorded:
+        label = _FUNDING_LABELS.get(item.kind or "")
+        if label is None:
+            continue
+        value = item.draft.value
+        key = (item.kind or "", value)
+        if key in seen:
+            continue
+        seen.add(key)
+        quote = (item.draft.quote or "").strip()
+        line = f"- {label}: {format_money(value)}"
+        if quote:
+            line += f". {quote}"
+        lines.append(line)
+    return "\n".join(lines)
+
+
 def render_cgt_statement(_facts: ReconciledFacts) -> str:
     return (
         "The disposal may create a capital gains tax liability, which will be "
