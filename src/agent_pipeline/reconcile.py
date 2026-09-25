@@ -222,10 +222,15 @@ def reconcile_observations(observations: list[Observation]) -> ReconciledFacts:
                 continue
 
         unique_vals: list[Any] = []
+        distinct: list[Observation] = []
         for obs in group:
             if not any(not values_materially_differ(obs.value, seen) for seen in unique_vals):
                 unique_vals.append(obs.value)
+                distinct.append(obs)
         has_conflict = len(unique_vals) > 1
+        if field in MEETING_FIELDS and _same_source_narrative(group) and len(distinct) > 1:
+            _record_narrative_group(distinct, field, account_id, kind, recorded, facts)
+            continue
         if has_conflict:
             label = f"{field}:{account_id}" if account_id else field
             conflicts.append(Conflict(field=label, details=_conflict_details(group), observations=group))
@@ -323,6 +328,50 @@ def reconcile_observations(observations: list[Observation]) -> ReconciledFacts:
         observation_count=len(filtered),
         recorded=recorded,
     )
+
+
+def _same_source_narrative(group: list[Observation]) -> bool:
+    """Several sentences from one meeting are not a disagreement."""
+    roles = {obs.source_role for obs in group}
+    return len(roles) == 1
+
+
+def _record_narrative_group(
+    distinct: list[Observation],
+    field: str,
+    account_id: str | None,
+    kind: MoneyKind | None,
+    recorded: list[RecordedFact],
+    facts: dict[str, SourcedValue],
+) -> None:
+    for index, draft in enumerate(distinct):
+        entry = _sourced(draft, account_id, False, kind)
+        recorded.append(
+            RecordedFact(
+                field=field,
+                account_id=account_id,
+                kind=kind,
+                draft=draft,
+                group=[draft],
+                conflict=False,
+            )
+        )
+        key = field if index == 0 else f"{field}__{index + 1}"
+        facts[key] = SourcedValue(
+            value=entry.value,
+            source=entry.source,
+            source_file=entry.source_file,
+            as_of=entry.as_of,
+            conflict=False,
+        )
+
+
+def _assign_unique_fact_ids(case_facts: list[CaseFact]) -> None:
+    seen: dict[str, int] = {}
+    for fact in case_facts:
+        seen[fact.id] = seen.get(fact.id, 0) + 1
+        if seen[fact.id] > 1:
+            fact.id = f"{fact.id}-{seen[fact.id]}"
 
 
 def _slug(value: Any) -> str:
@@ -649,6 +698,7 @@ def build_case_document(
 ) -> CaseDocument:
     """One case file: sources, typed facts with evidence, and joined actions."""
     case_facts = [case_fact_from_recorded(item) for item in reconciled.recorded]
+    _assign_unique_fact_ids(case_facts)
     actions = build_actions(case_facts, reconciled)
     extra_facts, extra_decisions = meeting_decision_records(meeting_decisions or [])
     case_facts.extend(extra_facts)

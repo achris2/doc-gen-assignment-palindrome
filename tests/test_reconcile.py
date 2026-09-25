@@ -119,6 +119,43 @@ def test_selling_false_skips_cgt_review_seed() -> None:
     assert "[REVIEW: platform fee]" in facts.review_items
 
 
+def test_same_meeting_keeps_each_narrative_sentence() -> None:
+    bereavement = _obs(
+        "circumstances",
+        "Jean's mother had passed away earlier in the spring.",
+        "meeting",
+        source_file="meeting_notes.docx",
+    )
+    bereavement.quote = "I started by acknowledging that Jean's mother had passed away earlier in the spring."
+    inheritance = _obs(
+        "circumstances",
+        "Jean has received an inheritance of around £120,000 from her late mother's estate.",
+        "meeting",
+        source_file="meeting_notes.docx",
+    )
+    inheritance.quote = "Jean has received an inheritance of around £120,000 from her late mother's estate, which has now cleared."
+    facts = reconcile_observations([bereavement, inheritance])
+    assert facts.conflicts == []
+    assert not any("circumstances conflict" in item for item in facts.review_items)
+    case = build_case_document(facts, {})
+    narrative = [fact for fact in case.facts if fact.field == "circumstances"]
+    assert len(narrative) == 2
+    assert {fact.id for fact in narrative} == {"f-circumstances", "f-circumstances-2"}
+    assert all(not fact.conflict for fact in narrative)
+    assert any("120,000" in fact.excerpt for fact in narrative)
+
+
+def test_narrative_disagreement_across_sources_stays_a_conflict() -> None:
+    observations = [
+        _obs("circumstances", "Retired, no changes.", "meeting", source_file="meeting_notes.docx"),
+        _obs("circumstances", "Still working.", "request", source_file="report_request.docx"),
+    ]
+    facts = reconcile_observations(observations)
+    assert len(facts.conflicts) == 1
+    assert facts.facts["circumstances"].value == "Retired, no changes."
+    assert facts.facts["circumstances"].conflict is True
+
+
 def test_text_conflict_on_request_field_keeps_request_draft() -> None:
     observations = [
         _obs("risk_profile", "4 (moderate)", "request"),
