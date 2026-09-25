@@ -148,7 +148,7 @@ def _with_risk_profile(text: str, case: CaseDocument) -> str:
 
 def _with_context(text: str, case: CaseDocument) -> str:
     parts = [text.rstrip()]
-    decisions = render_decision_sentences(case.decisions)
+    decisions = render_decision_sentences(case.decisions, already=text)
     if decisions:
         parts.append(decisions)
     extra = render_material_context(case.facts)

@@ -223,14 +223,18 @@ def render_risk_profile_line(facts: list[Any]) -> str:
     return f"Your risk profile is {number}."
 
 
-def render_decision_sentences(decisions: list[Any]) -> str:
+def render_decision_sentences(decisions: list[Any], already: str = "") -> str:
     """Dispose, retain, and confirm stay out of the action list. They are still part of the advice."""
+    lowered = already.lower()
     sentences = []
     for decision in decisions:
         if getattr(decision, "type", None) not in {"dispose", "retain", "confirm"}:
             continue
+        subject = str(getattr(decision, "subject", None) or "").strip().rstrip(".").lower()
+        if subject and subject in lowered:
+            continue
         sentence = _decision_sentence(decision)
-        if sentence and sentence not in sentences:
+        if sentence and sentence not in sentences and sentence.lower() not in lowered:
             sentences.append(sentence)
     return " ".join(sentences)
 
@@ -239,6 +243,8 @@ def _decision_sentence(decision: Any) -> str:
     subject = str(getattr(decision, "subject", None) or "").strip().rstrip(".")
     kind = decision.type
     if kind == "confirm":
+        if subject.lower().startswith("confirm "):
+            subject = subject[8:].strip()
         body = subject or "an outstanding point"
         return f"Still to confirm: {body}."
     if not subject:

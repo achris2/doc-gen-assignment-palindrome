@@ -228,6 +228,21 @@ def test_decision_sentences_cover_dispose_retain_and_confirm() -> None:
     assert "We agreed to leave the offshore bond as it is for now." in text
     assert "Still to confirm: the outstanding cash balance." in text
     assert "£" not in text
+    repeated = render_decision_sentences(
+        case.decisions,
+        already="We agreed to disinvest a portion of the Holloway joint GIA and rebalance it.",
+    )
+    assert "disinvest a portion" not in repeated
+    assert "leave the offshore bond" in repeated
+    named_confirm = render_decision_sentences(
+        [
+            type("Decision", (), {
+                "type": "confirm",
+                "subject": "confirm the outstanding cash balance",
+            })()
+        ]
+    )
+    assert named_confirm == "Still to confirm: the outstanding cash balance."
     assert not any(decision.type in {"dispose", "retain", "confirm"} and decision.id.startswith("a-") for decision in case.decisions)
 
 
