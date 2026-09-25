@@ -1,5 +1,6 @@
 """Deterministic renderers for fact-bound report slots."""
 
+import re
 from typing import Any
 
 from agent_pipeline.schema import Account, ReconciledFacts
@@ -136,32 +137,73 @@ def render_fees(facts: ReconciledFacts) -> str:
     return "\n".join(lines)
 
 
-_FUNDING_LABELS = {
-    "received_proceeds": "Received",
-    "loan_repayment": "Committed repayment",
-    "contingent_proceeds": "Contingent, not available",
-}
+def _money_facts(facts: list[Any], kind: str) -> list[Any]:
+    found = []
+    seen: set[float] = set()
+    for fact in facts:
+        if getattr(fact, "kind", None) != kind:
+            continue
+        number = fact.value if isinstance(fact.value, (int, float)) else None
+        if number is None or float(number) in seen:
+            continue
+        seen.add(float(number))
+        found.append(fact)
+    return found
 
 
-def render_funding(facts: ReconciledFacts) -> str:
-    """Money that is not a custody balance and not an investment action."""
-    lines = []
-    seen: set[tuple[str, Any]] = set()
-    for item in facts.recorded:
-        label = _FUNDING_LABELS.get(item.kind or "")
-        if label is None:
+def _committed_reason(excerpt: str) -> str:
+    match = re.search(r"committed to\s+(.+)", excerpt or "", flags=re.IGNORECASE)
+    if not match:
+        return ""
+    words = []
+    for word in match.group(1).replace(".", " ").split():
+        if words and word[:1].isupper():
+            break
+        words.append(word)
+        if len(words) >= 6:
+            break
+    return " ".join(words).strip(" ,;")
+
+
+def _source_noun(excerpt: str) -> str:
+    match = re.search(r"\bon the\s+([^:.]{1,40})", excerpt or "", flags=re.IGNORECASE)
+    if not match:
+        return ""
+    return match.group(1).strip()
+
+
+def render_material_context(facts: list[Any]) -> str:
+    """Non-action money that changes what can be invested. No raw quote."""
+    received = _money_facts(facts, "received_proceeds")
+    repayments = _money_facts(facts, "loan_repayment")
+    contingent = _money_facts(facts, "contingent_proceeds")
+    if not received and not repayments and not contingent:
+        return ""
+    sentences = []
+    used: set[int] = set()
+    for pool in received:
+        token = f"{int(pool.value):,}" if float(pool.value) == int(pool.value) else str(pool.value)
+        linked = next((item for item in repayments if token in (item.excerpt or "")), None)
+        noun = _source_noun(linked.excerpt if linked is not None else "")
+        head = f"Of the {format_money(pool.value)}{(' ' + noun) if noun else ''} received"
+        if linked is None:
+            sentences.append(f"{format_money(pool.value)} is available in connection with the recommendation.")
             continue
-        value = item.draft.value
-        key = (item.kind or "", value)
-        if key in seen:
+        reason = _committed_reason(linked.excerpt or "")
+        tail = f"{format_money(linked.value)} is not available to invest"
+        if reason:
+            tail += f" because it is committed to {reason}"
+        sentences.append(f"{head}, {tail}.")
+        used.add(id(linked))
+    for item in repayments:
+        if id(item) in used:
             continue
-        seen.add(key)
-        quote = (item.draft.quote or "").strip()
-        line = f"- {label}: {format_money(value)}"
-        if quote:
-            line += f". {quote}"
-        lines.append(line)
-    return "\n".join(lines)
+        sentences.append(f"{format_money(item.value)} is not available to invest.")
+    for item in contingent:
+        sentences.append(
+            f"A further amount of up to {format_money(item.value)} is contingent and is not currently available to invest."
+        )
+    return " ".join(sentences)
 
 
 def render_cgt_statement(_facts: ReconciledFacts) -> str:

@@ -15,7 +15,7 @@ from agent_pipeline.render import (
     facts_context_block,
     render_cgt_statement,
     render_fees,
-    render_funding,
+    render_material_context,
     render_holdings_table,
     render_scope,
 )
@@ -37,7 +37,6 @@ RENDERERS: dict[str, RenderFn] = {
     "scope": render_scope,
     "holdings_table": render_holdings_table,
     "fees": render_fees,
-    "funding": render_funding,
     "cgt_statement": render_cgt_statement,
 }
 _RENDER_NAMES = frozenset(RENDERERS)
@@ -100,9 +99,9 @@ class ReportGenerator:
     ) -> str:
         if not case.actions:
             case.record_recommendation([])
-            return "The amounts to be invested have not been fixed."
+            return _with_context("The amounts to be invested have not been fixed.", case)
         if all(action.amount_status == "not_agreed" for action in case.actions):
-            return _unfixed_recommendation(case)
+            return _with_context(_unfixed_recommendation(case), case)
         payload = self._chat.complete(
             f"{_action_context(case.actions)}\n\n---\n\n{instructions}\n\n{spec.prompt}\n"
             'Return JSON {"items": [{"action_id": "...", "text": "..."}]}. '
@@ -112,7 +111,7 @@ class ReportGenerator:
             RecommendationDraft.from_payload(payload), case.actions
         )
         case.record_recommendation(stored)
-        return text
+        return _with_context(text, case)
 
     def _narrative_slot(
         self, name: str, spec: PlaceholderSpec, case: CaseDocument, instructions: str
@@ -128,6 +127,13 @@ class ReportGenerator:
             return f"[REVIEW: {name} uncited]"
         case.record_narrative(name, draft.fact_ids)
         return draft.text
+
+
+def _with_context(text: str, case: CaseDocument) -> str:
+    extra = render_material_context(case.facts)
+    if not extra:
+        return text
+    return f"{text.rstrip()} {extra}"
 
 
 def _unfixed_recommendation(case: CaseDocument) -> str:

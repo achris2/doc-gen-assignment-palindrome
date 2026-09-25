@@ -1,12 +1,12 @@
 """Tests for deterministic HITL footer and fact-bound renderers."""
 
 from agent_pipeline.hitl import append_hitl_footer, render_human_review, render_sources
-from agent_pipeline.reconcile import reconcile_observations
+from agent_pipeline.reconcile import build_case_document, reconcile_observations
 from agent_pipeline.render import (
     account_in_scope,
     render_cgt_statement,
     render_fees,
-    render_funding,
+    render_material_context,
     render_holdings_table,
     render_scope,
     resolve_scoped_accounts,
@@ -25,16 +25,22 @@ def _obs(field, value, role, *, source_file, account_id=None, as_of=None):
     )
 
 
-def test_funding_lists_flow_kinds_only() -> None:
-    received = _obs("account_value", 850000, "meeting", source_file="meeting_notes.docx")
-    received.kind = "received_proceeds"
-    received.quote = "A completion payment of £850,000 was received."
-    balance = _obs("account_value", 52000, "db", source_file="db.json", account_id="H-ISA-01", as_of="2026-04-30")
-    facts = reconcile_observations([received, balance])
-    text = render_funding(facts)
-    assert "Received: £850,000" in text
-    assert "52,000" not in text
-    assert render_funding(reconcile_observations([balance])) == ""
+def test_context_paragraph_links_a_repayment_to_its_pool() -> None:
+    repayment = _obs("loan_repayment", 200000, "meeting", source_file="meeting_notes.docx")
+    repayment.kind = "loan_repayment"
+    repayment.quote = (
+        "Important point on the completion money: £200,000 of the £850,000 "
+        "is already committed to repaying a bridging loan James took out last year."
+    )
+    contingent = _obs("contingent_proceeds", 400000, "meeting", source_file="meeting_notes.docx")
+    contingent.kind = "contingent_proceeds"
+    case = build_case_document(reconcile_observations([repayment, contingent]), {})
+    text = render_material_context(case.facts)
+    assert "£850,000 completion money received" in text
+    assert "£200,000 is not available to invest because it is committed to repaying a bridging loan" in text
+    assert "up to £400,000 is contingent" in text
+    assert "James" not in text
+    assert "## Funding" not in text
 
 
 def _sample_facts():

@@ -32,18 +32,6 @@
       }
     },
     {
-      "id": "funding",
-      "title": "Funding",
-      "use_if": "always",
-      "template": "<<funding>>",
-      "placeholders": {
-        "funding": {
-          "source": "render",
-          "prompt": "List received proceeds, committed repayments, and contingent amounts. One line each. Do not treat them as amounts to invest."
-        }
-      }
-    },
-    {
       "id": "recommendations",
       "title": "Recommendations",
       "use_if": "always",
