@@ -7,11 +7,11 @@ from pathlib import Path
 
 from openai import OpenAI
 
-from agent_pipeline.extract import extract_observations
+from agent_pipeline.extract import decisions_for_meeting, extract_observations
 from agent_pipeline.generate import ReportGenerator
 from agent_pipeline.hitl import append_hitl_footer
 from agent_pipeline.reconcile import build_case_document, reconcile_observations, write_facts_json
-from agent_pipeline.schema import RunHeader, TemplateConfig
+from agent_pipeline.schema import MeetingDecision, RunHeader, TemplateConfig
 from agent_pipeline.sources import classify_client_files, load_typed_sources
 
 
@@ -55,11 +55,21 @@ def generate_client_report(
         classifications=classifications,
     )
     observations = extract_observations(typed, openai_client=openai_client, model=model)
+    meeting_decisions: list[MeetingDecision] = []
+    meeting = typed.get("meeting")
+    if meeting is not None:
+        meeting_decisions = decisions_for_meeting(
+            meeting,
+            observations,
+            openai_client=openai_client,
+            model=model,
+        )
     facts = reconcile_observations(observations)
     case = build_case_document(
         facts,
         classifications,
         run=run_header(run_label or client_name, config_text, model),
+        meeting_decisions=meeting_decisions,
     )
 
     client_out = output_dir / client_name

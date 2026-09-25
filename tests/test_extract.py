@@ -9,6 +9,7 @@ from agent_pipeline.extract import (
     extract_meeting_observations,
     extract_observations,
     extract_request_observations,
+    meeting_decisions_from_payload,
     parse_db_accounts,
     parse_request_kv_lines,
 )
@@ -237,6 +238,70 @@ def test_narrative_field_drops_money_kind() -> None:
     by_field = {o.field: o for o in obs}
     assert by_field["recommendation_summary"].kind is None
     assert by_field["account_value"].kind == "transfer_amount"
+
+
+def test_meeting_decisions_keep_supported_rows_and_drop_amounts() -> None:
+    payload = {
+        "decisions": [
+            {
+                "type": "dispose",
+                "status": "agreed",
+                "account_id": "H4-GIA-HJ",
+                "subject": "Partial disposal of the joint GIA",
+                "quote": "We agreed a partial disposal of the Holloway joint GIA.",
+            },
+            {
+                "type": "confirm",
+                "status": "outstanding",
+                "account_id": "M4-CASH-C",
+                "subject": "Caroline's cash balance",
+                "quote": "Caroline's cash balance is still to be confirmed.",
+                "amount": 30000,
+            },
+            {
+                "type": "retain",
+                "account_id": "NOT-AN-ACCOUNT",
+                "quote": "Leave the bond for now.",
+            },
+            {
+                "type": "transfer",
+                "quote": "Move £20,000 into the ISA.",
+            },
+        ]
+    }
+    kept = meeting_decisions_from_payload(
+        payload,
+        source_file="meeting_notes.docx",
+        known_account_ids={"H4-GIA-HJ", "M4-CASH-C"},
+    )
+    assert len(kept) == 1
+    assert kept[0].type == "dispose"
+    assert kept[0].target_account_id == "H4-GIA-HJ"
+    assert kept[0].quote.startswith("We agreed a partial disposal")
+    dropped = meeting_decisions_from_payload(
+        {
+            "decisions": [
+                {
+                    "type": "retain",
+                    "account_id": "H-CASH-01",
+                    "quote": "nothing should be actioned on it now.",
+                },
+                {
+                    "type": "confirm",
+                    "quote": "she may want to discuss gifting to her grandchildren at some point in the future",
+                },
+                {
+                    "type": "retain",
+                    "account_id": "M4-BOND-J",
+                    "quote": "we agreed to leave it as it is for now and revisit at the next review.",
+                },
+            ]
+        },
+        source_file="meeting_notes.docx",
+        known_account_ids={"H-CASH-01", "M4-BOND-J"},
+    )
+    assert [item.type for item in dropped] == ["retain"]
+    assert dropped[0].target_account_id == "M4-BOND-J"
 
 
 def test_extract_observations_composes_typed_sources(tmp_path: Path) -> None:

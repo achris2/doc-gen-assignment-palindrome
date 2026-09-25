@@ -14,6 +14,7 @@ from agent_pipeline.schema import (
     AccountAttr,
     DbAccount,
     KnownAccount,
+    MeetingDecision,
     MeetingExtract,
     MoneyKind,
     Observation,
@@ -360,6 +361,127 @@ def _format_known_accounts(accounts: list[KnownAccount]) -> str:
     if not accounts:
         return "(none — leave account_id null)"
     return "\n".join(account.line() for account in accounts)
+
+
+_DECISION_TYPES = frozenset({"dispose", "retain", "confirm"})
+_QUOTE_MARKERS = {
+    "dispose": ("disinvest", "disposal", "sell"),
+    "retain": ("leave", "retain", "revisit", "keep"),
+    "confirm": ("confirm",),
+}
+
+_MEETING_DECISION_PROMPT = """\
+Extract decisions that the meeting note states in its own words.
+Return ONLY valid JSON:
+{{
+  "decisions": [
+    {{
+      "type": "dispose|retain|confirm",
+      "status": "agreed|outstanding",
+      "account_id": "one of the known account ids, or null",
+      "subject": "short description of what was decided, or null",
+      "quote": "exact sentence from the note"
+    }}
+  ]
+}}
+
+Known accounts (use ONLY these ids, otherwise null):
+{known_accounts}
+
+Rules:
+- dispose: the note agrees a sale, partial sale, or rebalance that sells.
+- retain: the note agrees to keep a holding and not act on it now.
+- confirm: the note leaves a point still to be confirmed.
+- Each decision needs its own quote. Do not infer a decision from an account value,
+  a balance, or from the fact that selling is true.
+- Do not include amounts, money kinds, contributions, or transfers.
+- If the note does not state one of these decisions, return {{"decisions": []}}.
+"""
+
+
+def _quote_supports(decision_type: str, quote: str) -> bool:
+    lowered = quote.lower()
+    return any(marker in lowered for marker in _QUOTE_MARKERS[decision_type])
+
+
+def meeting_decisions_from_payload(
+    payload: dict[str, Any] | None,
+    *,
+    source_file: str,
+    known_account_ids: set[str] | None = None,
+) -> list[MeetingDecision]:
+    """Keep dispose, retain, and confirm rows that carry a quote and no amount."""
+    if not payload:
+        return []
+    known = known_account_ids or set()
+    kept: list[MeetingDecision] = []
+    for item in payload.get("decisions") or []:
+        if not isinstance(item, dict):
+            continue
+        decision_type = item.get("type")
+        if decision_type not in _DECISION_TYPES:
+            continue
+        if item.get("kind"):
+            continue
+        if item.get("amount") not in (None, ""):
+            continue
+        quote = str(item.get("quote") or "").strip()
+        if not quote or not _quote_supports(decision_type, quote):
+            continue
+        account_id = item.get("account_id")
+        target = None if account_id in (None, "") else str(account_id)
+        if target is not None and target not in known:
+            continue
+        status = item.get("status")
+        if status not in {"agreed", "outstanding"}:
+            status = "outstanding" if decision_type == "confirm" else "agreed"
+        subject = item.get("subject")
+        kept.append(
+            MeetingDecision(
+                type=decision_type,
+                status=status,
+                quote=quote,
+                source_file=source_file,
+                subject=None if subject in (None, "") else str(subject).strip(),
+                target_account_id=target,
+            )
+        )
+    return kept
+
+
+def decisions_for_meeting(
+    meeting: TypedSource,
+    observations: list[Observation],
+    *,
+    openai_client: OpenAI,
+    model: str,
+) -> list[MeetingDecision]:
+    return extract_meeting_decisions(
+        meeting.text,
+        meeting.name,
+        openai_client=openai_client,
+        model=model,
+        known_accounts=_known_accounts_from_db_obs(observations),
+    )
+
+
+def extract_meeting_decisions(
+    text: str,
+    source_file: str,
+    *,
+    openai_client: OpenAI,
+    model: str,
+    known_accounts: list[KnownAccount] | None = None,
+) -> list[MeetingDecision]:
+    """A separate call. Its rows cannot become money facts or recommendation actions."""
+    accounts = known_accounts or []
+    prompt = _MEETING_DECISION_PROMPT.format(known_accounts=_format_known_accounts(accounts))
+    payload = JsonChat(openai_client, model).complete(f"{prompt}\n\n---\n\n{text}", temperature=0)
+    return meeting_decisions_from_payload(
+        payload,
+        source_file=source_file,
+        known_account_ids={account.account_id for account in accounts},
+    )
 
 
 def extract_meeting_observations(

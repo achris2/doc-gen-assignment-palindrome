@@ -513,6 +513,18 @@ DecisionStatus = Literal["agreed", "outstanding"]
 
 
 @dataclass
+class MeetingDecision:
+    """A non-money decision named in the meeting note, before it is stored on the case."""
+
+    type: DecisionType
+    status: DecisionStatus
+    quote: str
+    source_file: str
+    subject: str | None = None
+    target_account_id: str | None = None
+
+
+@dataclass
 class Decision:
     """A choice recorded from evidence. It is not a money kind and not a recommendation action."""
 

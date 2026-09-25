@@ -8,7 +8,7 @@ from agent_pipeline.reconcile import (
     validate_recommendation_items,
     values_materially_differ,
 )
-from agent_pipeline.schema import Observation, RecommendationDraft
+from agent_pipeline.schema import MeetingDecision, Observation, RecommendationDraft
 
 
 def _obs(field, value, role, *, as_of=None, account_id=None, source_file="x"):
@@ -322,3 +322,35 @@ def test_same_amount_on_two_transfers_stays_separate() -> None:
     )
     assert len(case.actions) == 3
     assert all("corroborated" not in action.to_dict() for action in case.actions)
+
+
+def test_meeting_decisions_do_not_become_actions_or_amounts() -> None:
+    case = build_case_document(
+        reconcile_observations(
+            [
+                _obs("selling", True, "request"),
+                _obs(
+                    "recommendation_summary",
+                    "Use both ISA allowances and add to the joint GIA.",
+                    "meeting",
+                ),
+            ]
+        ),
+        {},
+        meeting_decisions=[
+            MeetingDecision(
+                type="dispose",
+                status="agreed",
+                quote="We agreed a partial disposal of the joint GIA.",
+                source_file="meeting_notes.docx",
+                subject="Partial disposal of the joint GIA",
+                target_account_id="H4-GIA-HJ",
+            )
+        ],
+    )
+    assert len(case.actions) == 1
+    assert case.actions[0].amount is None
+    dispose = next(decision for decision in case.decisions if decision.type == "dispose")
+    assert dispose.amount is None
+    assert dispose.supports.startswith("f-dispose-")
+    assert "kind" not in dispose.to_dict()

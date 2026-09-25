@@ -21,6 +21,7 @@ from agent_pipeline.schema import (
     MoneyKind,
     Observation,
     ParseStatus,
+    MeetingDecision,
     RecommendationAction,
     RecommendationDraft,
     RecommendationItem,
@@ -538,6 +539,63 @@ def _collapse_unambiguous_request_amount(
     return [action for index, action in enumerate(actions) if index not in drop]
 
 
+def meeting_decision_records(
+    meeting_decisions: list[MeetingDecision],
+) -> tuple[list[CaseFact], list[Decision]]:
+    """Store dispose, retain, and confirm as facts plus decisions. Never as actions."""
+    facts: list[CaseFact] = []
+    decisions: list[Decision] = []
+    seen: set[str] = set()
+    for item in meeting_decisions:
+        if item.type not in {"dispose", "retain", "confirm"}:
+            continue
+        quote = item.quote.strip()
+        if not quote or quote in seen:
+            continue
+        seen.add(quote)
+        slug = _slug(item.target_account_id or item.subject or item.type)
+        fact_id = f"f-{item.type}-{slug}"
+        decision_id = f"d-{item.type}-{slug}"
+        suffix = 2
+        while fact_id in {fact.id for fact in facts} or decision_id in {row.id for row in decisions}:
+            fact_id = f"f-{item.type}-{slug}-{suffix}"
+            decision_id = f"d-{item.type}-{slug}-{suffix}"
+            suffix += 1
+        facts.append(
+            CaseFact(
+                id=fact_id,
+                field=item.type,
+                value=item.subject or quote,
+                source_file=item.source_file,
+                excerpt=quote,
+                conflict=False,
+                kind=None,
+                account_id=item.target_account_id,
+                evidence=[
+                    Evidence(
+                        source_file=item.source_file,
+                        source_role="meeting",
+                        value=item.subject or quote,
+                        kind=None,
+                        excerpt=quote,
+                    )
+                ],
+            )
+        )
+        decisions.append(
+            Decision(
+                id=decision_id,
+                type=item.type,
+                status=item.status,
+                supports=fact_id,
+                target_account_id=item.target_account_id,
+                subject=item.subject,
+                amount=None,
+            )
+        )
+    return facts, decisions
+
+
 def build_decisions(
     actions: list[RecommendationAction], case_facts: list[CaseFact]
 ) -> list[Decision]:
@@ -587,16 +645,19 @@ def build_case_document(
     classifications: dict[str, FileRole] | None = None,
     *,
     run: RunHeader | None = None,
+    meeting_decisions: list[MeetingDecision] | None = None,
 ) -> CaseDocument:
     """One case file: sources, typed facts with evidence, and joined actions."""
     case_facts = [case_fact_from_recorded(item) for item in reconciled.recorded]
     actions = build_actions(case_facts, reconciled)
+    extra_facts, extra_decisions = meeting_decision_records(meeting_decisions or [])
+    case_facts.extend(extra_facts)
     return CaseDocument(
         run=run,
         sources=sources_from_classifications(classifications or {}),
         facts=case_facts,
         actions=actions,
-        decisions=build_decisions(actions, case_facts),
+        decisions=build_decisions(actions, case_facts) + extra_decisions,
         sections={},
         selling=reconciled.selling,
         conflicts=list(reconciled.conflicts),
